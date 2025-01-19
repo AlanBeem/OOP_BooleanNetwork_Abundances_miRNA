@@ -50,7 +50,7 @@ class TrajectoryCycleGraph:  # consider: ...(nx.Graph)
                     new_reversed_edges.add(tuple([edge[1], edge[0], weight]))
         self.edges = self.edges.union(new_edges)
         self.reversed_edges = self.reversed_edges.union(new_reversed_edges)  # idea: recursive data strucutre- not code running but kinda
-        # return self.nodes
+        return self.nodes
 
     def visualize_nx(self, reversed: bool =True, directed: bool =False, without_cycle_state_edges: bool =False):
         G = nx.DiGraph() if directed else nx.Graph()
