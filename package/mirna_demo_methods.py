@@ -1,10 +1,10 @@
 # make TOC class with docstring of all filenames and descriptions (/ aggregate docstrings from each)
-from abn_mir_plotting_functions import select_network
+from package.abn_mir_plotting_functions import select_network
 from random import SystemRandom
-from boolean_networks import BooleanNetwork
-from abundant_boolean_networks import AbundantBooleanNetwork
-from abundant_boolean_networks_with_micro_rna import MicroRNAAbundantBooleanNetwork, MicroRNANode, get_random_sequence, get_rna_reverse_complement
-from abn_mir_plotting_functions import mutate_and_return_2
+from package.boolean_networks import BooleanNetwork
+from package.abundant_boolean_networks import AbundantBooleanNetwork
+from package.abundant_boolean_networks_with_micro_rna import MicroRNAAbundantBooleanNetwork, MicroRNANode, get_random_sequence, get_rna_reverse_complement
+from package.abn_mir_plotting_functions import mutate_and_return_2
 
 
 def get_mabn_for_sites(seq_random: bool =True) -> MicroRNAAbundantBooleanNetwork:

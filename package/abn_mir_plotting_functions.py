@@ -1,8 +1,7 @@
 # Plotting functions composed in a Jupyter Notebook then accumulated here
-import matplotlib
 import matplotlib.pyplot as plt
 import networkx as nx
-from abundant_boolean_networks_with_micro_rna import *
+from package.abundant_boolean_networks_with_micro_rna import *
 
 
 # 12 17 2024

@@ -1,5 +1,7 @@
 import unittest
-import boolean_networks
+from package import *
+
+
 # testing boolean_networks.py
 # 01-18-2025 TODO Update line numbers (try to automate)  # TODO testing of added Function nodes (random, alternating, sequence)
 # in making some revisions at the start of 2025, this unittest was very useful.

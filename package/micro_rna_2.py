@@ -1,8 +1,6 @@
 # model of transfection would be cool to see
-# draft_micro_rna_SECOND_DRAFT__No_Comments.py
-from bn_mir_helper_functions_V1 import *
-from abundant_boolean_networks import *
-from abundant_boolean_networks import AbundantNode
+from package.bn_mir_helper_functions_V1 import *
+from package.abundant_boolean_networks import *
 
 
 # dinucleotide vectors, placeholder for e.g. data from McGeary 2019
@@ -17,7 +15,7 @@ class MicroRNANode(AbundantNode):
         super().__init__()
         self.state_schedule_index = None
         self.state_schedule = None
-        self.base_transcription_rate = None  # 08-30-2024
+        self.base_transcription_rate = None
         self.knockdown_vector_N = None
         self.maximum_abundance = 0
         self.transcription_rate = 0
@@ -35,7 +33,7 @@ class MicroRNANode(AbundantNode):
         self.current_mirmir_degradation_rate = 0
         self.current_ago_loaded_degradation_rate = 0
         self.base_deg_rate = 0
-        self.sequence = ""  # TODO strand selection (can make an accounting of relative gc content at each 5' end)
+        self.sequence = ""  # TODO strand selection (can make an accounting of relative gc content at each 5' end, or use NUPACK)
         self.pre_sequence = ""
         self.pri_sequence = ""
         self.current_knockdown_rate = 1
@@ -79,7 +77,7 @@ class MicroRNANode(AbundantNode):
                 "\ncurrent_knockdown_rate: " + str(self.current_knockdown_rate)
                 )
 
-    def update(self, state: bool):  # ODE's, for Euler's method
+    def update(self, state: bool):  # ODE's, for ~Euler's method
         if self.state_schedule is not None:
             state = self.state_schedule[self.state_schedule_index % len(self.state_schedule)]
             self.state_schedule_index += 1
@@ -120,33 +118,11 @@ class ThreePrimeUTRTargetSite:
         self.downstream_distance = None
         # adjust for contiguous matching nucleotides
         nt_comp = {'A':'U', 'U':'A', 'G':'C', 'C':'G'}  # dictionary
-        # print(nt_comp)
-        # print(f"nt_comp['A']: {nt_comp['A']}")
-        # print(f"nt_comp['U']: {nt_comp['U']}")
-        # print(f"nt_comp['G']: {nt_comp['G']}")
-        # print(f"nt_comp['C']: {nt_comp['C']}")
-        
-        # print(f"mRNA sequence: ...{abundant_node_ref.three_prime_utr[self.start_index - 20:self.start_index]}...{abundant_node_ref.three_prime_utr[self.start_index:self.end_index + 1]}")
-        # print(f"miR sequence: {self.micro_rna_node_reference.sequence}, rc_seed: {get_rna_reverse_complement(self.micro_rna_node_reference.sequence[1:7])}")
-
-        # print(f"start index: {self.start_index}")
-        # print(f"mRNA nt at start index: {self.abundant_node_reference.three_prime_utr[self.start_index]}")
-        # print(f"miRNA nt at index 6: {self.micro_rna_node_reference.sequence[6]}")
-        
-        # print(f"start index - 1: {self.start_index - 1}")
-        # print(f"mRNA nt at start index - 1: {self.abundant_node_reference.three_prime_utr[self.start_index - 1]}")
-        # print(f"miRNA nt at index 7: {self.micro_rna_node_reference.sequence[7]}")
-
-        # print(f"start index - 2: {self.start_index - 2}")
-        # print(f"mRNA nt at start index - 2: {self.abundant_node_reference.three_prime_utr[self.start_index - 2]}")
-        # print(f"miRNA nt at index 8: {self.micro_rna_node_reference.sequence[8]}")
-
         i = 7  # starts as a 6nt match  # miR: 0 [1 2 3 4 5 6] 7 ...
         while self.start_index - 1 >= 0 and abundant_node_ref.three_prime_utr[self.start_index - 1] == nt_comp[mir_node_ref.sequence[i]]:
             i += 1
-            self.start_index -= 1  # for now, eliminated TODO
+            self.start_index -= 1
         self.binding_nt = self.end_index - self.start_index + 1
-
 
         # assign site type  # "X-mer" notation: X = number of interacting target nt (A1 counts as an interaction)  (TODO full scheme seen in McGeary 2019)
         # as a binary encoding  # https://www.targetscan.org/docs/7mer.html TargetScan predicts 8mer, 7mer-m8, and 7mer-A1 (8mer = 7mer-m8-A1, or, I'd argue it should be written as 6mer-m8-A1)
@@ -299,7 +275,8 @@ for laasl_i in range(1, 10):
 
 
 def three_prime_utr_target_site_to_scalar(target_site_to_scalar: ThreePrimeUTRTargetSite):
-    # this should ? be fit per miRNA # was first implemented as returning a scalar = f(intermediate_exponent), 
+    # this should ? be fit per miRNA, mRNA # was first implemented as returning a scalar = f(intermediate_exponent),
+    # TODO try letting this define an activation function
     """this modifies the values of references of target site or evaluates each TargetSite to a scalar based on current expression values, or ."""
     # TODO something similar as a method of TargetSite # available abundance in a shuffled order  # add target directed miRNA degradation
     # # do this like Factory (?) where is set up a lambda expression taking the miR abundance and target abundance and returning a scalar
@@ -328,7 +305,7 @@ def three_prime_utr_target_site_to_scalar(target_site_to_scalar: ThreePrimeUTRTa
                                                                         target_site_to_scalar.abundant_node_reference.current_abundance *
                                                                         100)  # TODO vary this number
         # ceRNA (competing endogenous RNA hypothesis)
-
+        # ## This is handled by returning (scalar)**(target abundance / targeted abundance), which might be too strong
         # Localization
 
         # 2nt 5' and 2nt 3',
@@ -493,19 +470,7 @@ def utr_3_target_site_list_to_scalar(target_site_list: list[ThreePrimeUTRTargetS
 #         return temp_five_prime_list_scalar
 # #
 
-###         # from target site initialization (what got screwed up?)
-        #
-        # setup_bool = True
-        # while setup_bool:  # adjust start index to the lowest possible index for a contiguous match to seed nucleotides
-        #     if self.end_index - self.start_index + 1 + 1 < len(self.micro_rna_node_reference.sequence):
-        #         if nucleotide_complement(self.micro_rna_node_reference.sequence[self.end_index - self.start_index + 1 + 1], False)\
-        #                                   == self.abundant_node_reference.three_prime_utr[self.start_index - 1]:
-        #             self.start_index = self.start_index - 1
-        #         else:
-        #             setup_bool = False
-        #     else:
-        #         setup_bool = False
-
 # TODO McGeary 2019 says AGO-RBNS recovers sites with less binding nucleotides than canonical re Bartel 2009
         # Figure out minimal sequence determinants (over some number of possible models, see MC Boomer) for site type
         # differences (is it worth modeling this predictively?)
+

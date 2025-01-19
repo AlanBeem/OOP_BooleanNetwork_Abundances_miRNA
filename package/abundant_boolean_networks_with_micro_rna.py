@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
-from boolean_networks import *
-from abundant_boolean_networks import *
-from micro_rna_2 import *
+from package.boolean_networks import *
+from package.abundant_boolean_networks import *
+from package.micro_rna_2 import *
 
 
 def plot_abundances_and_micro_rna(abundances: list[list[float]], micro_rna_abundances: list[list[list[float]]],

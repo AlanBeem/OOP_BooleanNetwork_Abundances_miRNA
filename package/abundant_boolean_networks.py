@@ -1,7 +1,7 @@
 import copy
 from random import shuffle
 from matplotlib import cm
-from boolean_networks import *
+from package.boolean_networks import *
 
 
 # As a starting point for realistic numerical representation of RNA abundance, distributions other facts TBD. 08-07-2024
@@ -23,11 +23,12 @@ from boolean_networks import *
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 #
-#   Consider:   Matrix multiplication computation of RNA degradation, WAG. W is some weight function (such as from a
-#               Laplace transform). A is abundances. G is a composite function, and can include
-#               Boolean statements, where the result is an arbitrary data structure of a matrix of values that must be
+#   Consider:   Matrix multiplication computation of RNA degradation, W * A * G. W is some weight function (such as from
+#               a Laplace transform). A is abundances. G is a composite function, and can include
+#               Boolean statements, where the result is an arbitrary data structure or a matrix of values that must be
 #               interpreted across e.g. data objects each a subset of the columns, with each entry a scalar.
 #               Additionally, let some function define transcription; A(t+1) = A(t) + Transcription(t, A(t)) - WAG(t);
+#               basically, we can compute this programmatically.
 #
 # Regarding G:
 # From reading Python documentation about in/out and strings and printing
@@ -41,7 +42,7 @@ from boolean_networks import *
 #   Such an Euler-ian model could be an object-oriented program consistent with known models of aspects of RNA abundance
 #   and micro-RNAs.
 #
-#   For general purposes a numerical approach would be more efficient, but for now, "Extreme OOP"
+#   For general purposes a more 'numerical' approach would be more efficient, but for now, "Extreme OOP"
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -146,43 +147,54 @@ class BooleanAbundantNode(AbundantNode):
                     current_state))
         self.current_degradation_rate = self.base_deg_rate  # 08-25-2024
 
-
-# class NestedAbundantNode:
-#     """NestedAbundantNode represents a node with an assigned state, for each step, the states of the nested nodes are 
-#     determined by the state of the Boolean node and the truth table of the nested nodes states."""
-#     def __init__(self, num_nested_nodes: int, given_cycle_length: int, random_if_true: bool,
-#                  num_possible_states_to_average_per_update: int, deterministic_average: bool =False):
-#         self.input_rows = get_all_list_bool(num_nested_nodes, [False, True])
-#         self.output_column = get_random_list(2 ** num_nested_nodes, [False, True])
-#         while all([self.output_column[setup_i] == self.output_column[0] for setup_i in range(len(self.output_column))]):
-#             self.output_column = get_random_list(2 ** num_nested_nodes, [False, True])
-#         self.abundant_nodes = []
-#         for i in range(num_nested_nodes):
-#             self.abundant_nodes.append(AbundantNode())
-#         self.num_to_average_per_update = num_possible_states_to_average_per_update  # Vary over steps (over BN Hamm.) [as f(total abundance ?)]
-#         if deterministic_average:
-#             self.random_if_true = False
-#         else:
-#             self.random_if_true = random_if_true
-#         self.deterministic_average = deterministic_average
-#         self.deterministic_order = self.gen_deterministic_order()
+class NestedAbundantNode:  # from an older version, with changes
+    """NestedAbundantNode represents a node with an assigned state, for each step, the states of the nested nodes are 
+    determined by the state of the Boolean node and the truth table of the nested nodes states: starting from the"""
+    def __init__(self, num_nested_nodes: int, given_cycle_length: int, random_if_true: bool,
+                 num_possible_states_to_average_per_update: int):
+        self.random_if_true = random_if_true
+        self.input_rows = get_all_list_bool(num_nested_nodes, [False, True])
+        self.output_column = get_random_list(2 ** num_nested_nodes, [False, True])
+        while all([self.output_column[setup_i] == self.output_column[0] for setup_i in range(len(self.output_column))]):
+            self.output_column = get_random_list(2 ** num_nested_nodes, [False, True])
+        self.abundant_nodes = []
+        for i in range(num_nested_nodes):
+            self.abundant_nodes.append(AbundantNode())
+            self.abundant_nodes[-1].random_setup(given_cycle_length)
+        self.num_to_average_per_update = num_possible_states_to_average_per_update  # Vary over steps (over BN Hamm.)
+        self.current_abundance = 0
+        self.substate_index_list = list(range(len(self.input_rows)))
+        shuffle(self.substate_index_list)
     
-#     def gen_deterministic_order(self):
-#         order = list(range(len(self.output_column))) * 10
-#         SystemRandom().shuffle(order)
-#         t = -1
-#         while True:
-#             t += 1
-#             yield order[t % len(order)]
+    def display(self) -> None:
+        disp_string = 'inputs'.ljust(len(self.input_rows[0])) + '\toutputs\n\n'
+        for i in range(len(self.input_rows)):
+            disp_string += ''.join([str(int(b)) for b in self.input_rows[i]]) + f"\t{self.output_column[i]}\n"
+        print(disp_string)
 
-#*
-    def update(self, current_state: bool):
-        # given the current state (output column value), choose an input row, and update abundant nodes accordingly
-        if self.random_if_true:
+    def update(self, current_state: bool):  #                                displaying the abundance of the nested nodes was also good, this morphed a lot over time
+        if not self.random_if_true:  # updated 09-07-2024 pun not intended
+            # u_index = -1  # moved outside loop
+            for u_i in range(len(self.abundant_nodes)):
+                nan_temp_current_abundance = self.abundant_nodes[u_i].current_abundance
+                nan_temp_abundances = []
+                u_index = -1
+                for u_k in range(self.num_to_average_per_update):  # these loops could be more efficient
+                    u_bool = True
+                    while u_bool:
+                        u_index += 1
+                        if self.output_column[self.substate_index_list[u_index % len(self.output_column)]] == current_state:
+                            self.abundant_nodes[u_i].current_abundance = nan_temp_current_abundance  # this averages together multiple possible next steps
+                            self.abundant_nodes[u_i].update(self.input_rows[self.substate_index_list[u_index % len(self.input_rows)]][u_i])
+                            nan_temp_abundances.append(self.abundant_nodes[u_i].current_abundance)
+                            u_bool = False
+                self.abundant_nodes[u_i].current_abundance = sum(nan_temp_abundances) / self.num_to_average_per_update
+            self.current_abundance = sum([node.current_abundance for node in self.abundant_nodes]) / len(self.abundant_nodes)  # added 2025
+        else:
             for u_j in range(len(self.abundant_nodes)):
                 nan_temp_current_abundance = self.abundant_nodes[u_j].current_abundance
                 nan_temp_sum_abundances = 0
-                for u_k in range(self.num_to_average_per_update):
+                for u_k in range(self.num_to_average_per_update):  # this averages possible input states given output state
                     u_bool = True
                     while u_bool:
                         u_index = SystemRandom().randrange(len(self.output_column))
@@ -192,46 +204,8 @@ class BooleanAbundantNode(AbundantNode):
                             nan_temp_sum_abundances += self.abundant_nodes[u_j].current_abundance
                             u_bool = False
                 self.abundant_nodes[u_j].current_abundance = nan_temp_sum_abundances / self.num_to_average_per_update
-        elif self.deterministic_average:
-            count = 0
-            nan_temp_current_abundances = [node.current_abundance for node in self.abundant_nodes]  # Add another layer of nested-ness (layer number parameter)
-            nan_temp_sum_abundances = [0 for _ in self.abundant_nodes]
-            for _ in self.num_to_average_per_update:
-                while current_state is not self.output_column[index:=next(self.deterministic_order)]:
-                    pass  ### STOPPING POINT 12 18 2024  #*
-                print(index)
-                for j in range(len(self.abundant_nodes)):
-                    self.abundant_nodes[u_j].current_abundance = nan_temp_current_abundance
-                    self.abundant_nodes[u_j].update(self.input_rows[u_index][u_j])
-                    nan_temp_sum_abundances += self.abundant_nodes[u_j].current_abundance
-                self.abundant_nodes[u_j].current_abundance = nan_temp_sum_abundances / self.num_to_average_per_update
-        else:  # updated 09-07-2024 pun not intended
-            for u_i in range(len(self.abundant_nodes)):
-                nan_temp_current_abundance = self.abundant_nodes[u_i].current_abundance
-                nan_temp_abundances = []
-                u_index = -1
-                for u_k in range(self.num_to_average_per_update):
-                    u_bool = True
-                    while u_bool:
-                        u_index += 1
-                        if self.output_column[u_index % len(self.output_column)] == current_state:
-                            self.abundant_nodes[u_i].current_abundance = nan_temp_current_abundance
-                            self.abundant_nodes[u_i].update(self.input_rows[u_index % len(self.input_rows)][u_i])
-                            nan_temp_abundances.append(self.abundant_nodes[u_i].current_abundance)
-                            u_bool = False
-                self.abundant_nodes[u_i].current_abundance = sum(nan_temp_abundances) / self.num_to_average_per_update
-        
-# # So, also add a deterministic_shuffled_node or some command to make nodes this way, and over 3 behaviors of abundant nodes, show that perturbations can be composed from "unit" perturbations
-# #     [there are ways of approaching this illustration more formally: Ask MV about what works could be referenced in a proof of being able to select such, and what assumptions? (if they each
-# #      pretty much do (some of) everything, then at some point (more complicated statements o(x) c(x), you can't compose such perturbations)) Example: where perturbations are universal DNA
-# #      base encoded R-miRNAs (however, if the goal is accessible by noise (states are close) then it may be achievable by such a perturbation)] [[techniques to "reduce off target effects"
-# #      are not, in principle, generalizable (there is no model); but, there are numerous chemical modifications that result in such reduction for particular sequences, RmiRs data could turn
-# #      these techniques into technology; furthermore, applications of RmiRs data could obviate the need for (expensive, can't be introduced at transcription in a cell (yet)) chemical
-# #      modifications, where instead one is able to compose bespoke perturbations (by Monte Carlo; ranked, not optimal)]]
-#*
-
+            self.current_abundance = sum([node.current_abundance for node in self.abundant_nodes]) / len(self.abundant_nodes)  #
 # state encoding (1, 0) to continuous (vector of linearly increasing or decreasing values eg transcription_rate * 0.9 ^ n )
-
 
 class AbundantBooleanNetwork(BooleanNetwork):
     def __init__(self, num_nodes, possible_functions_indices_list: list[int], maximum_inputs_number: int,
@@ -274,21 +248,21 @@ class AbundantBooleanNetwork(BooleanNetwork):
             self.abundant_n_assignments.append(SystemRandom().randrange(len(self)))
         self.num_abundant_nodes += number_of_abundant_nodes
 
-    # def add_nested_nodes(self, number_of_nested_nodes: int, nodes_per_node: int, random_if_true: bool,
-    #                      num_to_average_per_update: int, deterministic_average: bool =False):
-    #     ann_average_cycle_length = 0
-    #     for each_cycle_record in self.bn_collapsed_cycles.cycle_records:
-    #         ann_average_cycle_length += len(each_cycle_record)
-    #     ann_average_cycle_length = ann_average_cycle_length / len(self.bn_collapsed_cycles)
-    #     for ann_i in range(number_of_nested_nodes):
-    #         self.nested_abundant_nodes.append(
-    #             NestedAbundantNode(nodes_per_node, int(ann_average_cycle_length), random_if_true,
-    #                                num_to_average_per_update, deterministic_average)
-    #                                )
-    #         for ann_L in range(len(self.nested_abundant_nodes[-1].abundant_nodes)):
-    #             self.abundant_nodes_2.append(self.nested_abundant_nodes[-1].abundant_nodes[ann_L])
-    #             self.nested_abundant_n_assignments.append(SystemRandom().randrange(len(self)))
-    #     self.num_abundant_nodes += number_of_nested_nodes
+    def add_nested_nodes(self, number_of_nested_nodes: int, nodes_per_node: int, random_if_true: bool,
+                         num_to_average_per_update: int, deterministic_average: bool =False):
+        ann_average_cycle_length = 0
+        for each_cycle_record in self.bn_collapsed_cycles.cycle_records:
+            ann_average_cycle_length += len(each_cycle_record)
+        ann_average_cycle_length = ann_average_cycle_length / len(self.bn_collapsed_cycles)
+        for ann_i in range(number_of_nested_nodes):
+            self.nested_abundant_nodes.append(
+                NestedAbundantNode(nodes_per_node, int(ann_average_cycle_length), random_if_true,
+                                   num_to_average_per_update)
+                                   )
+            for ann_L in range(len(self.nested_abundant_nodes[-1].abundant_nodes)):
+                self.abundant_nodes_2.append(self.nested_abundant_nodes[-1].abundant_nodes[ann_L])
+                self.nested_abundant_n_assignments.append(SystemRandom().randrange(len(self)))
+        self.num_abundant_nodes += number_of_nested_nodes
 
     def add_a_boolean_abundant_node(self, input_node_indices: list[int], output_function: list[bool]):
         self.boolean_abundant_nodes.append(BooleanAbundantNode(self, input_node_indices, output_function))

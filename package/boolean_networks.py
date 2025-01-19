@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import copy
-from bn_mir_helper_functions_V1 import *
+from package.bn_mir_helper_functions_V1 import *
 
 
 # _BooleanFunction objects for k ≤ 2

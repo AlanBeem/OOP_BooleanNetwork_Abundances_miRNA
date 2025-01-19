@@ -1,4 +1,4 @@
-from abundant_boolean_networks import *
+from package.abundant_boolean_networks import *
 
 # circa 08-18-2024
 def random_abundant_nodes(abun_bn: AbundantBooleanNetwork, cycle_index: int):

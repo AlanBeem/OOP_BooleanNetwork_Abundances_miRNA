@@ -1,4 +1,4 @@
-from bn_mir_helper_functions_V1 import get_hamming_distance
+from package.bn_mir_helper_functions_V1 import get_hamming_distance
 from typing import Hashable
 import networkx as nx
 
