@@ -10,3 +10,4 @@ Implement hash table based lookups where applicable
 Rename and clean up plotting functions
 
 Make Examples ipynb displaying all plotting functions output and example usage
+
