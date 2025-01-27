@@ -11,3 +11,5 @@ Rename and clean up plotting functions
 
 Gather Examples ipynb displaying all plotting functions output and example usage
 
+Convert representation of sequences to binary encoding: A:00, U/T:11, G:01, C:10
+
