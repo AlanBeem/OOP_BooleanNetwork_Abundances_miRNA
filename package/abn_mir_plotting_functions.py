@@ -1274,7 +1274,7 @@ def figure_2_3(boolean_network: BooleanNetwork, hamming_setup: HammingSetup, bv_
     # plt.title("TEST" + "".join([" " for fig_space_i in range(50)]))
 
 
-def figure_3_1(boolean_network: BooleanNetwork):
+def figure_3_1(boolean_network: BooleanNetwork):  # ca 01 26 2025- better solution: use sympy and matrix output
     # Runtime: ~30 seconds
     boolean_network.compute_unit_perturbations_matrix()
     print("Figure 2.3: Transitions resulting from unit perturbations of all observed cycle states of " + str(boolean_network))
@@ -1580,7 +1580,7 @@ def plot_a_transition(boolean_network: BooleanNetwork, hamming_setup: HammingSet
                 str(f'{str(boolean_network.bn_collapsed_cycles.get_index(each_state)):^12s}') for each_state in
                 perturbation_record.run_in]) + "\n")
         print("\n".join(test_bn_string_list))
-    print(list_of_perturbation_states)
+    # print(list_of_perturbation_states)  # was for debugging- now prints bytearrays TODO check on whether this makes string comparisons more whack
     # Hamming space output
     for each_states_list in list_of_perturbation_states:
         if list_of_perturbation_states.index(each_states_list) == 0:
@@ -1647,7 +1647,7 @@ def plot_a_transition(boolean_network: BooleanNetwork, hamming_setup: HammingSet
                 label='end of transition')
     plt.figlegend()
     plt.show()
-# TODO Figure out error relating to reference state not in starting cycle states
+# DONE Figure out error relating to reference state not in starting cycle states
 
 
 def plot_transition_s(boolean_network: BooleanNetwork, hamming_setup: HammingSetup, transition_index: int,
@@ -1741,10 +1741,10 @@ def figure_3_5(boolean_network: BooleanNetwork, hamming_setup: HammingSetup, bv_
     # TODO add total for which start index != end index [ extent to which matrix is not diagonal ? ]
     some_indices = get_transition_indices(boolean_network, 10)
     print(
-        "Figure 3.5.1: A transition from calculation of unit perturbations in text output as in Figure 1, and in the same Hamming space as in Figure 1.5:")
+        "Figure 2.1: A transition from calculation of unit perturbations, as text output, and in the same Hamming space as above:")
     plot_a_transition(boolean_network, hamming_setup, some_indices[0], True, bv_colors)
     print(
-        "Figure 3.5.2: 9 transitions from calculation of unit perturbations in the same Hamming space as in Figure 1.5:")
+        "Figure 2.2: 9 transitions from calculation of unit perturbations in the same Hamming space as above:")
     for tr_j in range(1, len(some_indices)):
         print("1 of " + str(boolean_network.cycles_unit_perturbations_transition_matrix[
                                 boolean_network.cycles_unit_perturbations_records[some_indices[tr_j]].start_index][
@@ -1754,9 +1754,9 @@ def figure_3_5(boolean_network: BooleanNetwork, hamming_setup: HammingSetup, bv_
               " to cycle " + str(
             # boolean_network.cycles_unit_perturbations_records[some_indices[tr_j]].end_index))
             boolean_network.bn_collapsed_cycles.get_index(boolean_network.cycles_unit_perturbations_records[some_indices[tr_j]].run_in[-1])))
-        plot_a_transition(boolean_network, hamming_setup, some_indices[tr_j], True, bv_colors)
+        plot_a_transition(boolean_network, hamming_setup, some_indices[tr_j], False, bv_colors)
     # For all transitions between two cycles
-    print("Figure 3.5.3: All transitions between two cycles, in the same Hamming space as set in Hamming setup")
+    print("Figure 2.3: All transitions between two cycles, in the same Hamming space as set in Hamming setup")
     transitions_index_1 = get_transition_indices(boolean_network, 1)[0]
     transitions_index_2 = 0
     transitions_bool_3 = True
@@ -1773,8 +1773,11 @@ def figure_3_5(boolean_network: BooleanNetwork, hamming_setup: HammingSetup, bv_
         else:
             transitions_bool_3 = False
     # 11/18/2024: bug fix: reference states not on cycle states  # 12/1/2024 wondering whether this is due to reindexing cycles?
-    plot_transition_s(boolean_network, hamming_setup, transitions_index_1, True, bv_colors)
-    plot_transition_s(boolean_network, hamming_setup, transitions_index_2, True, bv_colors)
+    # yep, that was it- didn't have .notify() in some of sort functions
+    print("from cycle A to cycle B")
+    plot_transition_s(boolean_network, hamming_setup, transitions_index_1, False, bv_colors)
+    print("from cycle B to cycle A")
+    plot_transition_s(boolean_network, hamming_setup, transitions_index_2, False, bv_colors)
 
 
 # separately, a text plot method TODO simple text plot method (decomposition of earlier / above code)
