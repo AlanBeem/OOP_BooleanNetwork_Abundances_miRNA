@@ -1152,12 +1152,15 @@ def figure_2_3(boolean_network: BooleanNetwork, hamming_setup: HammingSetup, bv_
     print()
     print(
         "Equilibrial states are represented as a +, and non-equilibrial states are represented by a points connected " +
-        "by a dotted line (though no intermediate states are calculated between points, we could imagine that these " +
-        "node state changes occur in a random or characteristic order for each step, or each particular state change," +
-        " however, we could also apply this to equilibrial states, and this may bring up some of the philosophical " +
-        "problems one could have with synchronous updating of such a network, though TBD for any scheme of " +
-        "asynchronous updating and continuous causal relationships you could define binary states and ?). Grey " +
-        "circles represent homogeneous initial conditions in this Hamming space.")
+        "by a dotted line")  # (though no intermediate states are calculated between points, we could imagine that these " +
+        # "node state changes occur in a random or characteristic order for each step, or each particular state change," +
+        # " however, we could also apply this to equilibrial states, and this may bring up some of the philosophical " +
+        # "problems one could have with synchronous updating of such a network, though TBD for any scheme of " +
+        # "asynchronous updating and continuous causal relationships you could define binary states and ?). Grey " +
+        # "circles represent homogeneous initial conditions in this Hamming space.")  # this is actually not true, these
+        # behave like a net with a random node in terms of finite state machine behavior (they're not finite state machines)
+        # if it were that update order was fixed or deterministic, they'd be finite state machines, and some relation
+        # to a BN would exist
     print(
         "If lines appear solid, this is because a dotted line going to and from a point overlap in such a way as to" +
         " appear solid.")
