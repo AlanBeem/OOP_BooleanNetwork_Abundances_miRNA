@@ -1663,7 +1663,7 @@ def plot_transition_s(boolean_network: BooleanNetwork, hamming_setup: HammingSet
         if each_perturbation_record.start_index == this_transition.start_index:
             if each_perturbation_record.end_index == this_transition.end_index:
                 transitions_indices.append(tr_L)
-    print("Number of transitions: " + str(len(transitions_indices)))
+    # print("Number of transitions: " + str(len(transitions_indices)))
     for each_transition_index in transitions_indices:
         transition_index = each_transition_index
         end_of_transition_x = None
