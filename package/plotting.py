@@ -1,7 +1,57 @@
 # Plotting functions composed in a Jupyter Notebook then accumulated here
+import time
+from package.bn_graph_methods import *
 import matplotlib.pyplot as plt
 import networkx as nx
 from package.abundant_boolean_networks_with_micro_rna import *
+
+
+# revised
+# plot trajectories as they are added
+def updated_trajectories(bn: BooleanNetwork, bv_colors, run_ins: int = 300):
+    """run enough run-ins to get the cycles set up before using this"""
+    count = 0
+    fig = plt.figure()
+    c_records = bn.bn_collapsed_cycles.cycle_records
+    for record in (c_records):
+        see_run = TrajectoryCycleGraph()
+        see_run.set_cycle(record.cycle_states_list)
+        nodes = []
+    for _ in range(run_ins):
+        bn.add_cycle()
+        nodes.extend(see_run.add_all(run_in_as_edges(bn.current_states_list), edge_weights(bn.current_states_list)))        
+        # fig.clear(keep_observers=True)
+        fig.clear(keep_observers=True)
+        plt.title(f"cycle length: {len(record)}, number of observations: {record.num_observations}")
+        see_run.visualize_nx(reversed=False)
+        plt.show()
+        time.sleep(1)
+    print(bn)   
+    print(f"2^N = 2^{len(bn)} = {2**len(bn)}")
+
+def text_plot_cycle(network: BooleanNetwork, index: int = 0):
+    network.bn_collapsed_cycles.sort_cycle_records_by_cycle_length()
+    cycle_states_list = network.bn_collapsed_cycles.cycle_records[
+        index
+    ].cycle_states_list
+    node_cycles_string_list = [
+        str(f'{"node " + str(tbn_k + 1) + ": ":>11s}')
+        for tbn_k in range(len(cycle_states_list[0]))
+    ]  # one for each node
+    for (
+        each_list_1
+    ) in cycle_states_list:  # each list is of length number of nodes
+        for tbn_l in range(len(cycle_states_list[0])):  # for each node
+            # ## From Python documentation: f'result: {value:{width}.{precision}}' ##
+            node_cycles_string_list[tbn_l] += str(f"{str(int(each_list_1[tbn_l])):^5s}")
+            if each_list_1 is cycle_states_list[-2]:
+                node_cycles_string_list[tbn_l] += "|"
+            else:
+                node_cycles_string_list[tbn_l] += " "
+    print(
+        f"{get_ordinal_string(network.bn_collapsed_cycles.get_index(each_list_1), True)} cycle\n"
+    )
+    print("\n".join(node_cycles_string_list))
 
 
 # 12 17 2024
@@ -15,29 +65,28 @@ def get_truth_table(func) -> str:  # for k=2
     return "\n".join(out_string)
 
 
-# # 08-21-2024
-# def get_colors(total_colors_times_5_over_8: int, shuffled_if_true: bool):
-#     got_colors = []
-#     shuffled_colors = []
-#     for each_color_1 in cm.nipy_spectral(
-#         np.linspace(0, 1, int(3 * total_colors_times_5_over_8 / 5), True)
-#     ).tolist():
-#         got_colors.append(each_color_1)
-#     for sc_i in range(4):
-#         got_colors.append(cm.gist_stern(np.linspace(0.05, 0.8, 4, True)).tolist()[sc_i])
-#     test_int_1 = 0
-#     for each_color_2 in cm.gist_earth(
-#         np.linspace(0.1, 0.9, total_colors_times_5_over_8, True)
-#     ).tolist():
-#         got_colors.append(each_color_2)
-#     if shuffled_if_true:
-#         while len(got_colors) > 0:
-#             shuffled_colors.append(
-#                 got_colors[SystemRandom().randrange(0, len(got_colors))]
-#             )
-#             got_colors.remove(shuffled_colors[-1])
-#         got_colors = shuffled_colors
-#     return got_colors
+# 08-21-2024
+def get_colors(at_least: int, shuffled_if_true: bool) -> list:
+    got_colors = cm.nipy_spectral(
+        np.linspace(0, 1, int(2 * at_least / 5) + 1, True)
+    ).tolist()
+    got_colors.extend(cm.gist_stern(
+        np.linspace(0.05, 0.8, 4, True)
+    ).tolist())
+    got_colors.extend(cm.gist_earth(
+        np.linspace(0.1, 0.9, int(2 * at_least / 5), True)
+    ).tolist())
+    if shuffled_if_true:
+        shuffle(got_colors)
+        # while len(got_colors) > 0:
+        #     # pseudorandom removal of values followed by remove
+        #     shuffled_colors.append(
+        #         got_colors[SystemRandom().randrange(0, len(got_colors))]
+        #     )
+        #     # got_colors.remove(shuffled_colors[-1])
+        #     got_colors.pop()
+        # got_colors = shuffled_colors
+    return got_colors
 
 
 def get_colors_old(boolean_network: BooleanNetwork, shuffled_if_true: bool):
@@ -49,7 +98,6 @@ def get_colors_old(boolean_network: BooleanNetwork, shuffled_if_true: bool):
         got_colors.append(each_color_1)
     for sc_i in range(4):
         got_colors.append(cm.gist_stern(np.linspace(0.05, 0.8, 4, True).tolist()[sc_i]))
-    test_int_1 = 0
     for each_color_2 in cm.gist_earth(
         np.linspace(0.1, 0.9, int(len(boolean_network.list_of_all_run_ins))), True
     ).tolist():
@@ -188,10 +236,6 @@ def get_graph_representation(bn: BooleanNetwork):
     return fig
 
 
-# use graphviz instead
-
-
-# circa 09-14
 def get_list_of_node_sequences(cycle_record: CycleRecord):
     # By using the __len__() method of CycleRecord, this ignores the duplicated first/last entries of cycle states list
     # return [[cycle_record.cycle_states_list[glns_i][glns_j] for glns_i in range(len(cycle_record))] for glns_j in range(len(cycle_record.cycle_states_list[0]))]
@@ -211,7 +255,7 @@ def get_list_of_node_sequences(cycle_record: CycleRecord):
 def per_node_sequence_similarity_posterity(
     cycle_record_1: CycleRecord,
     cycle_record_2: CycleRecord,
-    boolean_network: BooleanNetwork or None,
+    boolean_network: BooleanNetwork | None,
 ):
     if boolean_network is not None:
         pnss_report_string = (
@@ -608,6 +652,7 @@ def align_cycle_states_lists_of_cc_to_cons_seq(
 def get_least_common_multiple(
     iterable_ints,
 ):  # TODO rename and refactor, double check LCM algorithm
+    # currently: common multiple (not least)
     glcm_return_int = max(iterable_ints)
     iterable_ints = sorted(iterable_ints, reverse=True)
     for each_int in iterable_ints:
@@ -666,7 +711,7 @@ def plot_polar_cycles_cons_hamm(
                         ppc_cons_seq,
                     )
                 )
-            plt.polar(ppc_theta, ppc_radius, color=bv_colors[ppc_k], alpha=0.3)
+            plt.polar(ppc_theta, ppc_radius, color=bv_colors[ppc_k], alpha=0.5)
             plt.polar(
                 ppc_theta[
                     0 : len(boolean_network.bn_collapsed_cycles.cycle_records[ppc_k])
@@ -712,101 +757,101 @@ def plot_polar_cycles_cons_hamm(
                         ppc_cons_seq,
                     )
                 )
-            plt.polar(ppc_theta, ppc_radius, color=bv_colors[ppc_k], alpha=0.3)
+            plt.polar(ppc_theta, ppc_radius, color=bv_colors[ppc_k], alpha=0.5, label=f"cycle: {ppc_k + 1}")
         plt.show()
 
 
-def plot_polar_cycles_input_seq(
-    boolean_network: BooleanNetwork,
-    origin_sequence: list[bool],
-    plot_one_period_if_true: bool,
-    bv_colors,
-):
-    align_cycle_states_lists_of_cc_to_cons_seq(boolean_network.bn_collapsed_cycles)
-    #
-    print("Radius: Hamming distance to: " + str(origin_sequence))
-    #
-    if not plot_one_period_if_true:
-        ppc_cycle_lengths_set = set()
-        for each_cycle in boolean_network.bn_collapsed_cycles.cycle_records:
-            ppc_cycle_lengths_set.add(len(each_cycle))
-        ppc_least_common_multiple = get_least_common_multiple(ppc_cycle_lengths_set)
-        print(
-            "Theta: 1 step == "
-            + (str(2 * math.pi / ppc_least_common_multiple))
-            + " radians"
-        )
-        ppc_theta = [
-            ppc_i * 2 * math.pi / ppc_least_common_multiple
-            for ppc_i in range(ppc_least_common_multiple)
-        ]  # in radians
-        ppc_theta.append(0)
-        for ppc_k in range(len(boolean_network.bn_collapsed_cycles)):
-            ppc_radius = []
-            for ppc_j in range(ppc_least_common_multiple + 1):
-                ppc_radius.append(
-                    get_hamming_distance(
-                        boolean_network.bn_collapsed_cycles.cycle_records[ppc_k][
-                            ppc_j
-                            % (
-                                len(
-                                    boolean_network.bn_collapsed_cycles.cycle_records[
-                                        ppc_k
-                                    ]
-                                )
-                            )
-                        ],
-                        origin_sequence,
-                    )
-                )
-            plt.polar(ppc_theta, ppc_radius, color=bv_colors[ppc_k], alpha=0.3)
-            plt.polar(
-                ppc_theta[
-                    0 : len(boolean_network.bn_collapsed_cycles.cycle_records[ppc_k])
-                    + 1
-                ],
-                ppc_radius[
-                    0 : len(boolean_network.bn_collapsed_cycles.cycle_records[ppc_k])
-                    + 1
-                ],
-                color=bv_colors[ppc_k],
-                alpha=0.8,
-            )
-        plt.show()
-    else:
-        print("Theta: varied: 1 step == 2 * Pi / (cycle length)")
-        for ppc_k in range(len(boolean_network.bn_collapsed_cycles)):
-            ppc_theta = [
-                ppc_i
-                * 2
-                * math.pi
-                / len(boolean_network.bn_collapsed_cycles.cycle_records[ppc_k])
-                for ppc_i in range(
-                    len(boolean_network.bn_collapsed_cycles.cycle_records[ppc_k]) + 1
-                )
-            ]  # in radians
-            # ppc_theta.append(0)
-            ppc_radius = []
-            for ppc_j in range(
-                len(boolean_network.bn_collapsed_cycles.cycle_records[ppc_k]) + 1
-            ):
-                ppc_radius.append(
-                    get_hamming_distance(
-                        boolean_network.bn_collapsed_cycles.cycle_records[ppc_k][
-                            ppc_j
-                            % (
-                                len(
-                                    boolean_network.bn_collapsed_cycles.cycle_records[
-                                        ppc_k
-                                    ]
-                                )
-                            )
-                        ],
-                        origin_sequence,
-                    )
-                )
-            plt.polar(ppc_theta, ppc_radius, color=bv_colors[ppc_k], alpha=0.3)
-        plt.show()
+# def plot_polar_cycles_input_seq(
+#     boolean_network: BooleanNetwork,
+#     origin_sequence: list[bool],
+#     plot_one_period_if_true: bool,
+#     bv_colors,
+# ):
+#     align_cycle_states_lists_of_cc_to_cons_seq(boolean_network.bn_collapsed_cycles)
+#     #
+#     print("Radius: Hamming distance to: " + str(origin_sequence))
+#     #
+#     if not plot_one_period_if_true:
+#         ppc_cycle_lengths_set = set()
+#         for each_cycle in boolean_network.bn_collapsed_cycles.cycle_records:
+#             ppc_cycle_lengths_set.add(len(each_cycle))
+#         ppc_least_common_multiple = get_least_common_multiple(ppc_cycle_lengths_set)
+#         print(
+#             "Theta: 1 step == "
+#             + (str(2 * math.pi / ppc_least_common_multiple))
+#             + " radians"
+#         )
+#         ppc_theta = [
+#             ppc_i * 2 * math.pi / ppc_least_common_multiple
+#             for ppc_i in range(ppc_least_common_multiple)
+#         ]  # in radians
+#         ppc_theta.append(0)
+#         for ppc_k in range(len(boolean_network.bn_collapsed_cycles)):
+#             ppc_radius = []
+#             for ppc_j in range(ppc_least_common_multiple + 1):
+#                 ppc_radius.append(
+#                     get_hamming_distance(
+#                         boolean_network.bn_collapsed_cycles.cycle_records[ppc_k][
+#                             ppc_j
+#                             % (
+#                                 len(
+#                                     boolean_network.bn_collapsed_cycles.cycle_records[
+#                                         ppc_k
+#                                     ]
+#                                 )
+#                             )
+#                         ],
+#                         origin_sequence,
+#                     )
+#                 )
+#             plt.polar(ppc_theta, ppc_radius, color=bv_colors[ppc_k], alpha=0.3)
+#             plt.polar(
+#                 ppc_theta[
+#                     0 : len(boolean_network.bn_collapsed_cycles.cycle_records[ppc_k])
+#                     + 1
+#                 ],
+#                 ppc_radius[
+#                     0 : len(boolean_network.bn_collapsed_cycles.cycle_records[ppc_k])
+#                     + 1
+#                 ],
+#                 color=bv_colors[ppc_k],
+#                 alpha=0.8,
+#             )
+#         plt.show()
+#     else:
+#         print("Theta: varied: 1 step == 2 * Pi / (cycle length)")
+#         for ppc_k in range(len(boolean_network.bn_collapsed_cycles)):
+#             ppc_theta = [
+#                 ppc_i
+#                 * 2
+#                 * math.pi
+#                 / len(boolean_network.bn_collapsed_cycles.cycle_records[ppc_k])
+#                 for ppc_i in range(
+#                     len(boolean_network.bn_collapsed_cycles.cycle_records[ppc_k]) + 1
+#                 )
+#             ]  # in radians
+#             # ppc_theta.append(0)
+#             ppc_radius = []
+#             for ppc_j in range(
+#                 len(boolean_network.bn_collapsed_cycles.cycle_records[ppc_k]) + 1
+#             ):
+#                 ppc_radius.append(
+#                     get_hamming_distance(
+#                         boolean_network.bn_collapsed_cycles.cycle_records[ppc_k][
+#                             ppc_j
+#                             % (
+#                                 len(
+#                                     boolean_network.bn_collapsed_cycles.cycle_records[
+#                                         ppc_k
+#                                     ]
+#                                 )
+#                             )
+#                         ],
+#                         origin_sequence,
+#                     )
+#                 )
+#             plt.polar(ppc_theta, ppc_radius, color=bv_colors[ppc_k], alpha=0.3)
+#         plt.show()
 
 
 def plot_polar_cycles_bv(
@@ -880,11 +925,11 @@ def plot_polar_cycles_bv(
             24 * 60 / len(boolean_network.bn_collapsed_cycles.cycle_records[cl_i])
             for cl_i in range(len(boolean_network.bn_collapsed_cycles))
         ]
-        print(
-            "Assuming each cycle is 24 hours, 1 step == "
-            + str(cycle_lengths)
-            + " minutes"
-        )
+        # print(
+        #     "Assuming each cycle is 24 hours, 1 step == "
+        #     + str(cycle_lengths)
+        #     + " minutes"
+        # )  # I'm not sure I should trust Google entirely on this one, but, it seems neat
         fig_1, ax_1 = plt.subplots(subplot_kw={"projection": "polar"})
         for ppc_k in range(len(boolean_network.bn_collapsed_cycles)):
             ppc_theta = [
@@ -926,7 +971,7 @@ def plot_polar_cycles_bv(
                 )
             ax_1.plot(ppc_theta, ppc_radius, color=bv_colors[ppc_k], alpha=0.3)
         ax_1.grid(False)
-        ax_1.legend(labels=["" for fl_i in range(len(cycle_lengths))])
+        # fig_1.add_axes(ax_1.legend(labels=[f"cycle length: {L}" for L in cycle_lengths]))
         plt.show()
 
 
@@ -1569,29 +1614,7 @@ def plot_target_sites(
             print()
 
 
-def figure_1_1(network: BooleanNetwork, index: int = 0):
-    network.bn_collapsed_cycles.sort_cycle_records_by_cycle_length()
-    fig_1_current_states_list = network.bn_collapsed_cycles.cycle_records[
-        index
-    ].cycle_states_list
-    test_bn_string_list = [
-        str(f'{"node " + str(tbn_k + 1) + ": ":>11s}')
-        for tbn_k in range(len(fig_1_current_states_list[0]))
-    ]  # one for each node
-    for (
-        each_list_1
-    ) in fig_1_current_states_list:  # each list is of length number of nodes
-        for tbn_l in range(len(fig_1_current_states_list[0])):  # for each node
-            # ## From Python documentation: f'result: {value:{width}.{precision}}' ##
-            test_bn_string_list[tbn_l] += str(f"{str(int(each_list_1[tbn_l])):^5s}")
-            if each_list_1 is fig_1_current_states_list[-2]:
-                test_bn_string_list[tbn_l] += "|"
-            else:
-                test_bn_string_list[tbn_l] += " "
-    print(
-        f"{get_ordinal_string(network.bn_collapsed_cycles.get_index(each_list_1), True)} cycle\n"
-    )
-    print("\n".join(test_bn_string_list))
+
 
 
 def figure_1_2(boolean_network: BooleanNetwork, cycle_record_index: int):
@@ -2372,12 +2395,10 @@ def figure_3_1(
         print(each_string)
 
 
-def figure_3_2(boolean_network: BooleanNetwork):
-    for more_cycles in range(1000):
-        boolean_network.add_cycle()
+def transitions(boolean_network: BooleanNetwork):
     boolean_network.compute_unit_perturbations_matrix()
     print(
-        "Figure 3.2: Transitions resulting from unit perturbations of all observed cycle states of "
+        "Transitions resulting from unit perturbations of all observed cycle states of "
         + str(boolean_network)
     )
     print(
@@ -2434,7 +2455,7 @@ def figure_3_2(boolean_network: BooleanNetwork):
         print(each_string_1)
     print("\n")
     print(
-        "Figure 2.4: Transitions resulting from unit perturbations of all observed states of "
+        "Transitions resulting from unit perturbations of all observed states of "
         + str(boolean_network)
     )
     # for cycles

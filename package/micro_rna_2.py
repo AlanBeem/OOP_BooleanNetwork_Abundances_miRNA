@@ -33,6 +33,7 @@ class MicroRNANode(AbundantNode):
         self.current_pre_degradation_rate = 0
         self.current_mirmir_degradation_rate = 0
         self.current_ago_loaded_degradation_rate = 0
+        # add perturbation of above by target directed degradation
         self.base_deg_rate = 0
         self.sequence = ""  # TODO strand selection (can make an accounting of relative gc content at each 5' end, or use NUPACK)
         self.pre_sequence = ""
@@ -141,7 +142,7 @@ class ThreePrimeUTRTargetSite:
     length of contiguous bound subsequence, like in TargetScan. Contiguous seed pairing is calculated at evaluation or
     as setup logic in __init__."""
 
-    # TODO define *= operation (dunder)
+    # TODO define *= operation (dunder) and make product sum
     def __init__(
         self,
         start_index: int,
@@ -272,6 +273,8 @@ def get_three_prime_utr_target_sites(
     mirna_nodes: list[MicroRNANode], abundant_node: AbundantNode
 ) -> list[ThreePrimeUTRTargetSite]:
     """intended for batch use where all miRNA sequence nodes are known, also assigns site distances."""
+    # 5' to 3' on target sequence, for each nt: for each miR | reverse complementary interaction:
+    # deposit a TargetSite
     # ribosome_shadow = 15  # nt (index==14)
     # a_sequence = abundant_node.three_prime_utr[ribosome_shadow:len(abundant_node.three_prime_utr)]
     sequences_to_match = [
@@ -282,6 +285,8 @@ def get_three_prime_utr_target_sites(
         rel_end_index = start_index + 5  # used as an inclusive bound
         # sub_seq = a_sequence[start_index:start_index + len(sequences_to_match[0])]
         sub_seq = abundant_node.three_prime_utr[start_index : rel_end_index + 1]
+        # give miRs a specific "seed(s)" field, and evaluate strand preference as a function of localization,
+        # think stoichiometry and condensates
         for mir_i, each_seq in zip(range(len(mirna_nodes)), sequences_to_match):
             # reverse and complement must be applied to sequence comparison
             # if each_seq.startswith(get_rna_reverse_complement(sub_seq)):
@@ -543,6 +548,7 @@ def three_prime_utr_target_site_to_scalar(
                     * len(target_site_to_scalar.abundant_node_reference.three_prime_utr)
                 )
             ]
+        # consider: applying a bunch of random hexamers, or ... ssRNAse in a cell while you lyse it, stopping the reaction
         # print(f"* site accessibility (should be the same) == {intermediate_scalar}")
 
         # Local AU Content (proxy for site accessibility): Bartel 2009, Figure 4
