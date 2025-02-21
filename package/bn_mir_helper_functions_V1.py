@@ -146,9 +146,7 @@ def get_weighted_consensus_sequence_list(
 
 def get_consensus_sequence(
     sequences: list[str],
-):  # TODO unhardcode nt, add nt variable to code, replace all ["A...
-    #                                                   or add method to helper methods <
-    # 09-06-2024
+):  # 09-06-2024
     sequence_lists = []
     for each_seq in sequences:
         sequence_lists.append([])

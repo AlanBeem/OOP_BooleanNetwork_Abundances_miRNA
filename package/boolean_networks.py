@@ -502,7 +502,7 @@ class CycleRecord:
     def __lt__(self, other):
         return (
             len(self) < len(other) or self.num_observations < other.num_observations
-        )  # <
+        )  # < maybe remove this if not used; no need to pick a primary meaning, here
 
     def set_zero_distance(self, zero_distance: float):
         self.zero_distance = zero_distance
@@ -517,6 +517,7 @@ class CollapsedCycles(Subject):
         self.most_recent_cycle_index = None
         self.cycle_records = []
         self.hashed_states = dict()
+        self.current_sort = ''
 
     def __len__(self):
         return len(self.cycle_records)
@@ -589,21 +590,25 @@ class CollapsedCycles(Subject):
         self.cycle_records.sort(
             key=lambda p: 0 - p.num_observations
         )  # reverse=True keyword is also an option
-        self.notify()  # replace notify with lambda: reference to field or property ? TODO
+        self.notify()
+        self.current_sort = 'num. observations'
 
     def sort_cycle_records_by_cycle_length(self):
         self.cycle_records.sort(key=lambda p: 0 - len(p))
         self.notify()
+        self.current_sort = 'cycle length'
 
     def sort_by_cycle_length_and_num_observations(self):
         self.cycle_records = sorted(self.cycle_records, reverse=True)
         self.notify()
+        self.current_sort = 'cycle length and num. observations'
 
     def sort_cycle_records_by_hamming_diameter(self):
         self.cycle_records.sort(
             key=lambda p: 0 - get_hamming_diameter(p.cycle_states_list)
         )
         self.notify()
+        self.current_sort = 'Hamming diameter'
 
     def sort_by_cycle_similarity(self, zero_cycle: CycleRecord):
         for each_record in self.cycle_records:
@@ -617,6 +622,7 @@ class CollapsedCycles(Subject):
                 )
         self.cycle_records.sort(key=lambda p: 0 - p.zero_distance)
         self.notify()
+        self.current_sort = 'cycle similarity'
 
     def get_hamm_cons_zero_cycle(self):
         pass
@@ -818,6 +824,22 @@ class CompositePerturbationRecord:
         self.perturbed_node_indices = perturbed_node_indices
 
 
+# class RunIn:
+#     def __init__(self):
+#         self.offset = 0
+#         self.data = bytearray()
+    
+#     def add_state(self, state):
+#         self.data.extend(state)
+#         self.offset += len(state)
+    
+#     def get_ints(self) -> tuple[int]:
+#         for i in range(len(self.data)):
+#             b = '0b' + ''.join([str(int(s[i])) for i in range(len(s))])
+#             net_states.extend((int(b, base=2) net.bn_collapsed_cycles.get_index(s)))
+
+
+
 class BooleanNetwork:
     def __init__(
         self,
@@ -995,8 +1017,8 @@ class BooleanNetwork:
 
     def run_ins_from_homogeneous_states(self):
         # Run-in's from special case initial conditions of all-False and all-True:
-        self.run_in_from_conditions([False for bn_l in range(len(self.nodes))])
-        self.run_in_from_conditions([True for bn_m in range(len(self.nodes))])
+        self.run_in_from_conditions([False for _ in self.nodes])
+        self.run_in_from_conditions([True for _ in self.nodes])
 
     def set_conditions(self, conditions: list[bool]):
         """set_conditions assigns [conditions] to self.current_states_list and is present for readability"""
@@ -1011,11 +1033,12 @@ class BooleanNetwork:
         for as_i in range(len(self.nodes)):
             self.current_states_list[-1].append(
                 self.nodes[as_i].function.get_boolean(
-                    self.current_states_list[-2][self.node_inputs_assignments[as_i][0]],
-                    self.current_states_list[-2][self.node_inputs_assignments[as_i][1]],
+                    bool(self.current_states_list[-2][self.node_inputs_assignments[as_i][0]]),
+                    bool(self.current_states_list[-2][self.node_inputs_assignments[as_i][1]]),
                 )
             )
         self.total_advance_states += 1
+        # self.current_states_df.apply()
 
     def get_random_conditions(self):
         """get_random_initial_conditions returns a list of bool chosen by SystemRandom of length len(self.nodes)"""
@@ -1074,7 +1097,7 @@ class BooleanNetwork:
                     TrajectoryRecord(
                         self.bn_collapsed_cycles.get_index(self.current_states_list[0]),
                         self.bn_collapsed_cycles.most_recent_cycle_index,
-                        self.current_states_list[0:].copy(),
+                        copy.deepcopy(self.current_states_list),
                     )
                 )
                 self.list_of_all_indices_of_first_cycle_state.append(
@@ -1084,7 +1107,7 @@ class BooleanNetwork:
         else:
             # otherwise, add an unterminated trajectory record
             self.bn_trajectories.add_record(
-                TrajectoryRecord(None, None, self.current_states_list)
+                TrajectoryRecord(None, None, copy.deepcopy(self.current_states_list))
             )
             self.list_of_all_indices_of_first_cycle_state.append(None)
         self.list_of_all_run_ins.append(copy.deepcopy(self.current_states_list))

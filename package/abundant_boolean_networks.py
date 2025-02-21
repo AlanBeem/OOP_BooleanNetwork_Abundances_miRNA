@@ -395,7 +395,8 @@ class AbundantBooleanNetwork(BooleanNetwork):
         number_of_cycles: int = 1,
         reset_abundances_if_true: bool = False,
     ):
-        """For all AbundantNode s of this instance, over the given set of states, animate abundance and display a plot
+        """Gives values to current_abundances_list, use for setting up abundances.
+        For all AbundantNode s of this instance, over the given set of states, animate abundance and display a plot
         using matplotlib."""
         num_steps = len(states_to_animate) * number_of_cycles + 1
         if reset_abundances_if_true:

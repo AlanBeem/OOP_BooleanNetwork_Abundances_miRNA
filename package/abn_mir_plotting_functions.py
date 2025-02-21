@@ -1,3 +1,4 @@
+import numpy as np
 # Plotting functions composed in a Jupyter Notebook then accumulated here
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -637,7 +638,8 @@ def plot_polar_cycles_cons_hamm(
         ppc_cycle_lengths_set = set()
         for each_cycle in boolean_network.bn_collapsed_cycles.cycle_records:
             ppc_cycle_lengths_set.add(len(each_cycle))
-        ppc_least_common_multiple = get_least_common_multiple(ppc_cycle_lengths_set)
+        # ppc_least_common_multiple = get_least_common_multiple(ppc_cycle_lengths_set)
+        ppc_least_common_multiple = np.lcm.reduce(ppc_cycle_lengths_set)
         print(
             "Theta: 1 step == "
             + (str(2 * math.pi / ppc_least_common_multiple))
@@ -820,11 +822,11 @@ def plot_polar_cycles_bv(
         ppc_cycle_lengths_set = set()
         for each_cycle in boolean_network.bn_collapsed_cycles.cycle_records:
             ppc_cycle_lengths_set.add(len(each_cycle))
-        ppc_least_common_multiple = get_least_common_multiple(ppc_cycle_lengths_set)
+        ppc_least_common_multiple = np.lcm.reduce(ppc_cycle_lengths_set)
         print(
-            "Theta, steps ∈ ["
-            + str(24 * 60 / ppc_least_common_multiple)
-            + "] minutes, duration of each step taken to be the same for all cycles"
+            "Theta: 1 step == "
+            + (str(2 * math.pi / ppc_least_common_multiple))
+            + " radians"
         )
         print("least common multiple: " + str(ppc_least_common_multiple))
         ppc_theta = [

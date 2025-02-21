@@ -1,12 +1,145 @@
 # Plotting functions composed in a Jupyter Notebook then accumulated here
 import time
 from package.bn_graph_methods import *
-import matplotlib.pyplot as plt
 import networkx as nx
 from package.abundant_boolean_networks_with_micro_rna import *
-
+from package.abn_mir_plotting_functions import HammingSetup
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 # revised
+
+def binary_states(net: BooleanNetwork, setup_colors, goal_cycle_index, plt) -> plt.figure:
+    # tuple of binary num, cycle index, sort by binary num
+    #
+    net.bn_collapsed_cycles.sort_cycle_records_by_num_observations()
+    #
+    fig, axs = plt.subplots(nrows=1, ncols=2, width_ratios=(2, 1))
+
+    #
+    traj_net_states = []
+    for r in net.list_of_all_run_ins:
+        for s in r:
+            b = '0b' + ''.join([str(int(s[i])) for i in range(len(s))])
+            traj_net_states.append((int(b, base=2), net.bn_collapsed_cycles.get_index(r[-1])))
+    traj_net_states.sort(key=lambda p: p[0])
+    #
+    x = []
+    y = []
+    c = []
+    for n_s in traj_net_states:
+        x.append(n_s[0])
+        if n_s[1] is None:
+            y.append(-1)
+            c.append(setup_colors[-1])
+        else:
+            y.append(n_s[1])
+            c.append(setup_colors[n_s[1] % len(setup_colors)])
+    axs[0].scatter(x,  y, c=c, alpha=0.15, marker='|', s=10, label='trajectory state')
+    #
+    goal_states = []
+    net_states = []
+    for r in net.bn_collapsed_cycles.cycle_records:
+        for s in r.cycle_states_list:
+            b = int('0b' + ''.join([str(int(s[i])) for i in range(len(s))]), base=2)
+            net_states.append((b, net.bn_collapsed_cycles.get_index(s)))
+            if net.bn_collapsed_cycles.cycle_records.index(r) == goal_cycle_index:
+                goal_states.append(b)
+    net_states.sort(key=lambda p: p[0])
+    #
+    x = []
+    y = []
+    c = []
+    for n_s in net_states:
+        x.append(n_s[0])
+        if n_s[1] is None:
+            y.append(-1)
+            c.append(setup_colors[-1])
+        else:
+            y.append(n_s[1])
+            c.append(setup_colors[n_s[1] % len(setup_colors)])
+    axs[0].scatter(x,  y, c=c, alpha=0.4, label='cycle state', marker='o', s=50)
+    # plt.xscale('')
+    # axs[0].set_title(f"{str(net)}\n\ngoal states: cycle: {goal_cycle_index} (in box)")  # There are orderings of the nodes that makes this more meaningful
+    axs[0].text(-axs[0].get_xlim()[1] / 2, axs[0].get_ylim()[1] + 2, f"{str(net)}\n\ngoal states: cycle: {goal_cycle_index} (in box)")
+    axs[0].set_xlabel('states as binary integers')
+    axs[0].set_xticks(ticks = [], labels = [])
+    axs[0].set_yticks(ticks=[i for i in range(len(net.bn_collapsed_cycles.cycle_records))], labels=[f"cycle length: {len(c)}, " + f"num. obs.: {c.num_observations}" for c in net.bn_collapsed_cycles.cycle_records])
+    axs[0].legend()
+    # plt.show()
+
+    # Define the bounding box coordinates and dimensions
+    x_min, x_max = min(goal_states) - axs[0].get_xlim()[1] / 20, max(goal_states) + axs[0].get_xlim()[1] / 20
+    y_min, y_max = goal_cycle_index - 0.5, goal_cycle_index + 0.5
+    width = x_max - x_min
+    height = y_max - y_min
+
+    # Create a Rectangle patch
+    rect = patches.Rectangle((x_min, y_min), width, height, 
+                            linewidth=1, edgecolor='k', facecolor='none', alpha = 0.6)
+
+    # Add the patch to the Axes
+    axs[0].add_patch(rect)
+
+    fig.set_size_inches(12, 8)
+
+    run_in = goal_cycle_index
+    axs[1].text(0, -2, f"steps of {get_ordinal_string(run_in, True)} cycle: ")
+    axs[1].imshow(np.transpose(net.bn_collapsed_cycles.cycle_records[run_in].cycle_states_list), cmap='gist_stern')
+    axs[1].set_yticks(ticks = [i for i in range(len(net))], labels = ["node " + str(i + 1) for i in range(len(net))])
+    # plt.yticks(ticks = [], labels = [])
+    axs[1].set_xticks(ticks = [i for i in range(len(net.bn_collapsed_cycles.cycle_records[run_in].cycle_states_list))],
+            labels = [(f"{i}" if i in [0] + [2**k for k in range(5)] else "") for i in range(len(net.bn_collapsed_cycles.cycle_records[run_in].cycle_states_list))])
+    # fig.set_size_inches(12, 12)
+    axs[1].tick_params(top=True, labeltop=True, bottom=False, labelbottom=False)
+
+    return fig
+
+
+
+# def bw_node_states(net: BooleanNetwork, states_list, text_title: str | None = None) -> plt.figure:
+#     fig, ax = plt.subplots()
+#     if states_list and run_in_index:
+#         raise ValueError("At most 1 of states_list, run_in_index can be not None (omit one or both keyword arguments)")
+#     if run_in_index is None and states_list is None:
+#         run_in = SystemRandom().randrange(0, len(net.list_of_all_run_ins))
+#         states_list = net.list_of_all_run_ins[run_in]
+        
+#     else:
+#         if not run_in_index is None:
+#             states_list = net.list_of_all_run_ins[run_in]
+
+#         run_in = states_list
+#     plt.text(0, -4, text_title)
+#     plt.imshow(np.transpose(states_list), cmap='gist_stern')
+#     plt.yticks(ticks = [i for i in range(len(net))], labels = ["node " + str(i + 1) for i in range(len(net))])
+#     fig.set_size_inches(12, 12)
+#     ax.tick_params(top=True, labeltop=True, bottom=False, labelbottom=False)
+#     i = 0
+#     while not np.allclose(states_list[i], states_list[-1]):
+#         i += 1
+#     identified_cycles
+#         ax.hlines(-1, i, ax.get_xlim()[1], label=f"cycle {net.bn_collapsed_cycles.get_index(states_list[-1])}")
+#     plt.legend(loc='upper right')
+#     return fig
+
+# def plot_bw_node_states(bn: BooleanNetwork, cycle_or_run_in: str = 'cycle', index: int | None = None) -> plt.figure:
+#     """use index = -1 to get a pseudorandomly selected representation of a cycle or run-in"""
+#     if cycle_or_run_in.lower().count('cycle') > 0:
+#         if index is None:
+#             index = SystemRandom().randrange(len(bn.bn_collapsed_cycles.cycle_records))
+#         text_title = f"steps of {get_ordinal_string(index, True)} cycle: "
+#         states_to_display = bn.bn_collapsed_cycles.cycle_records[index].cycle_states_list
+#     elif cycle_or_run_in.lower().count('run') > 0:
+#         if index is None:
+#             index = SystemRandom().randrange(len(bn.list_of_all_run_ins))
+#         text_title = f"steps of {get_ordinal_string(index, True)} run-in: "
+#         states_to_display = bn.list_of_all_run_ins[index]
+#     else:
+#         raise ValueError(f"Supplied argument: {cycle_or_run_in}, cannot be parsed into selection of cycle or run-in.")
+#     return bw_node_states(net=bn, states_list=states_to_display, text_title=text_title)
+
+
 # plot trajectories as they are added
 def updated_trajectories(bn: BooleanNetwork, bv_colors, run_ins: int = 300):
     """run enough run-ins to get the cycles set up before using this"""
@@ -681,8 +814,12 @@ def plot_polar_cycles_cons_hamm(
     if not plot_one_period_if_true:
         ppc_cycle_lengths_set = set()
         for each_cycle in boolean_network.bn_collapsed_cycles.cycle_records:
-            ppc_cycle_lengths_set.add(len(each_cycle))
-        ppc_least_common_multiple = get_least_common_multiple(ppc_cycle_lengths_set)
+            ppc_cycle_lengths_set.add(max(1, len(each_cycle)))
+        # ppc_least_common_multiple = get_least_common_multiple(ppc_cycle_lengths_set)
+        ppc_least_common_multiple = list(np.lcm.reduce(ppc_cycle_lengths_set))[0]
+        print(f"ppc_least_common_multiple: {ppc_least_common_multiple}")
+        ppc_least_common_multiple = max(np.gcd.reduce(ppc_cycle_lengths_set))
+        print(f"ppc_least_common_multiple: {ppc_least_common_multiple}")
         print(
             "Theta: 1 step == "
             + (str(2 * math.pi / ppc_least_common_multiple))
@@ -711,7 +848,7 @@ def plot_polar_cycles_cons_hamm(
                         ppc_cons_seq,
                     )
                 )
-            plt.polar(ppc_theta, ppc_radius, color=bv_colors[ppc_k], alpha=0.5)
+            plt.polar(ppc_theta, ppc_radius, color=bv_colors[ppc_k], alpha=0.3)
             plt.polar(
                 ppc_theta[
                     0 : len(boolean_network.bn_collapsed_cycles.cycle_records[ppc_k])
@@ -757,7 +894,7 @@ def plot_polar_cycles_cons_hamm(
                         ppc_cons_seq,
                     )
                 )
-            plt.polar(ppc_theta, ppc_radius, color=bv_colors[ppc_k], alpha=0.5, label=f"cycle: {ppc_k + 1}")
+            plt.polar(ppc_theta, ppc_radius, color=bv_colors[ppc_k], alpha=0.3)
         plt.show()
 
 
@@ -854,6 +991,7 @@ def plot_polar_cycles_cons_hamm(
 #         plt.show()
 
 
+
 def plot_polar_cycles_bv(
     boolean_network: BooleanNetwork, plot_one_period_if_true: bool, bv_colors
 ):
@@ -864,12 +1002,15 @@ def plot_polar_cycles_bv(
     if not plot_one_period_if_true:
         ppc_cycle_lengths_set = set()
         for each_cycle in boolean_network.bn_collapsed_cycles.cycle_records:
-            ppc_cycle_lengths_set.add(len(each_cycle))
-        ppc_least_common_multiple = get_least_common_multiple(ppc_cycle_lengths_set)
+            ppc_cycle_lengths_set.add(max(1, len(each_cycle)))
+        ppc_least_common_multiple = list(np.lcm.reduce(ppc_cycle_lengths_set))[0]
+        print(f"ppc_least_common_multiple: {ppc_least_common_multiple}")
+        ppc_least_common_multiple = max(np.gcd.reduce(ppc_cycle_lengths_set))
+        print(f"ppc_least_common_multiple: {ppc_least_common_multiple}")
         print(
-            "Theta, steps ∈ ["
-            + str(24 * 60 / ppc_least_common_multiple)
-            + "] minutes, duration of each step taken to be the same for all cycles"
+            "Theta: 1 step == "
+            + (str(2 * math.pi / ppc_least_common_multiple))
+            + " radians"
         )
         print("least common multiple: " + str(ppc_least_common_multiple))
         ppc_theta = [
@@ -925,11 +1066,11 @@ def plot_polar_cycles_bv(
             24 * 60 / len(boolean_network.bn_collapsed_cycles.cycle_records[cl_i])
             for cl_i in range(len(boolean_network.bn_collapsed_cycles))
         ]
-        # print(
-        #     "Assuming each cycle is 24 hours, 1 step == "
-        #     + str(cycle_lengths)
-        #     + " minutes"
-        # )  # I'm not sure I should trust Google entirely on this one, but, it seems neat
+        print(
+            "Assuming each cycle is 24 hours, 1 step == "
+            + str(cycle_lengths)
+            + " minutes"
+        )
         fig_1, ax_1 = plt.subplots(subplot_kw={"projection": "polar"})
         for ppc_k in range(len(boolean_network.bn_collapsed_cycles)):
             ppc_theta = [
@@ -971,7 +1112,7 @@ def plot_polar_cycles_bv(
                 )
             ax_1.plot(ppc_theta, ppc_radius, color=bv_colors[ppc_k], alpha=0.3)
         ax_1.grid(False)
-        # fig_1.add_axes(ax_1.legend(labels=[f"cycle length: {L}" for L in cycle_lengths]))
+        ax_1.legend(labels=["" for fl_i in range(len(cycle_lengths))])
         plt.show()
 
 
@@ -2041,12 +2182,12 @@ class HammingSetup:
         return (x, y)
 
 
-def figure_2_3(
+def hamming_plots(
     boolean_network: BooleanNetwork, hamming_setup: HammingSetup, bv_colors: list
 ):
     set_of_state_strings = set()
     selected_run_in_states = []
-    print("Figure 3.1: 2D plot of observed cycles, and homogeneous conditions")
+    print("2D plot of observed cycles, and homogeneous conditions")
     print()
     print(
         "Equilibrial states are represented as a +, and non-equilibrial states are represented by a points connected "
@@ -2216,7 +2357,7 @@ def figure_2_3(
         num_row += 1
     fig_2, axs_2 = plt.subplots(num_row, num_col)
     fig_2.set_size_inches(12, 3 * num_row)
-    fig_2.suptitle("Figure 3.2: Each cycle of Figure 3.1, same axes as Figure 3.1")
+    fig_2.suptitle("Each cycle of preceding, axes as set in HammingSetup")
     fig_2.supxlabel("Hamming distance to consensus cycle state and random states")
     fig_2.supylabel("Hamming distance to all-False state and random states")
     # Hide x labels and tick labels for top plots and y ticks for right plots.
@@ -2732,13 +2873,7 @@ def get_transition_indices(boolean_network: BooleanNetwork, number_of_indices: i
     return transitions_indices
 
 
-def plot_a_transition(
-    boolean_network: BooleanNetwork,
-    hamming_setup: HammingSetup,
-    transition_index: int,
-    text_plot_if_true: bool,
-    bv_colors: list,
-):
+def text_output_transition(boolean_network: BooleanNetwork, transition_index):
     # Originally referred to Figure 1 data, TBD TODO Objects for figures and object for whole thing
     end_of_transition_x = None
     end_of_transition_y = None
@@ -2768,8 +2903,6 @@ def plot_a_transition(
                 perturbation_record.end_index
             ].cycle_states_list,
         ]
-    # Text output
-    if text_plot_if_true:
         fig_2_states_list = perturbation_record.run_in  # Redundant
         test_bn_string_list = [
             str(f'{"node " + str(tbn_k + 1):>11s}: ')
@@ -2797,186 +2930,220 @@ def plot_a_transition(
             + "\n"
         )
         print("\n".join(test_bn_string_list))
-    # print(list_of_perturbation_states)  # was for debugging- now prints bytearrays TODO check on whether this makes string comparisons more whack
-    # Hamming space output
-    for each_states_list in list_of_perturbation_states:
-        if list_of_perturbation_states.index(each_states_list) == 0:
-            transitions_color = "k"
-            transitions_line_style = "dashed"
-            transitions_line_width = 1
-            transitions_label = "transition"
-            transitions_alpha = 0.75
-        elif list_of_perturbation_states.index(each_states_list) == 1:
-            transitions_color = bv_colors[
+
+
+def plot_a_transition(
+    boolean_network: BooleanNetwork,
+    hamming_setup: HammingSetup,
+    bv_colors: list,
+):
+        # Originally referred to Figure 1 data, TBD TODO Objects for figures and object for whole thing
+    end_of_transition_x = None
+    end_of_transition_y = None
+    perturbation_record = boolean_network.cycles_unit_perturbations_records[
+        SystemRandom().randrange(0, len(boolean_network.cycles_unit_perturbations_records))
+    ]
+    if (
+        perturbation_record.end_index is None
+    ):  # 08-17-2024 end_index of None (I think) came up, could be start_index
+        # if it's start_index there's errors elsewhere, ... , TODO unittest
+        print("Perturbation record end_index is None, plotting run_in as ending cycle:")
+        list_of_perturbation_states = [
+            perturbation_record.run_in,
+            boolean_network.bn_collapsed_cycles.cycle_records[
+                perturbation_record.start_index
+            ].cycle_states_list,
+            perturbation_record.run_in,
+        ]
+    else:
+        list_of_perturbation_states = [
+            perturbation_record.run_in,
+            boolean_network.bn_collapsed_cycles.cycle_records[
+                perturbation_record.start_index
+            ].cycle_states_list,
+            boolean_network.bn_collapsed_cycles.cycle_records[
+                perturbation_record.end_index
+            ].cycle_states_list,
+        ]
+    
+        # print(list_of_perturbation_states)  # was for debugging- now prints bytearrays TODO check on whether this makes string comparisons more whack
+        # Hamming space output
+        for each_states_list in list_of_perturbation_states:
+            if list_of_perturbation_states.index(each_states_list) == 0:
+                transitions_color = "k"
+                transitions_line_style = "dashed"
+                transitions_line_width = 1
+                transitions_label = "transition"
+                transitions_alpha = 0.75
+            elif list_of_perturbation_states.index(each_states_list) == 1:
+                transitions_color = bv_colors[
+                    int(
+                        len(bv_colors)
+                        * perturbation_record.start_index
+                        / len(boolean_network.bn_collapsed_cycles)
+                    )
+                ]
+                transitions_line_style = "solid"
+                transitions_line_width = 2
+                transitions_label = "starting cycle"
+                transitions_alpha = 1
+            else:
+                transitions_color = bv_colors[
+                    int(
+                        len(bv_colors)
+                        * perturbation_record.end_index
+                        / len(boolean_network.bn_collapsed_cycles)
+                    )
+                ]
+                transitions_line_style = "solid"
+                transitions_line_width = 2
+                transitions_label = "ending cycle"
+                transitions_alpha = 1
+            each_x = []
+            each_y = []
+            for each_cycle_state in each_states_list:
+                each_x.append(
+                    sum(
+                        [
+                            hamming_setup.linear_function[fig_143_n]
+                            * get_hamming_distance(
+                                hamming_setup.first_sequences[fig_143_n], each_cycle_state
+                            )
+                            for fig_143_n in range(len(hamming_setup.linear_function))
+                        ]
+                    )
+                )
+                each_y.append(
+                    sum(
+                        [
+                            hamming_setup.linear_function[fig_143_o]
+                            * get_hamming_distance(
+                                hamming_setup.second_sequences[fig_143_o], each_cycle_state
+                            )
+                            for fig_143_o in range(len(hamming_setup.linear_function))
+                        ]
+                    )
+                )
+                if list_of_perturbation_states.index(each_states_list) == 0:
+                    if each_cycle_state is each_states_list[-1]:
+                        end_of_transition_x = each_x[-1]
+                        end_of_transition_y = each_y[-1]
+            if (
+                len(each_x) == 2
+                and list_of_perturbation_states.index(each_states_list) != 0
+            ):
+                plt.scatter(
+                    each_x,
+                    each_y,
+                    color=transitions_color,
+                    linestyle=transitions_line_style,
+                    marker="P",
+                    linewidth=transitions_line_width,
+                    alpha=transitions_alpha,
+                    label=transitions_label,
+                    s=100,
+                )
+            else:
+                plt.plot(
+                    each_x,
+                    each_y,
+                    color=transitions_color,
+                    linestyle=transitions_line_style,
+                    linewidth=transitions_line_width,
+                    alpha=transitions_alpha,
+                    label=transitions_label,
+                )
+        transition_ref_x = sum(
+            [
+                hamming_setup.linear_function[fig_143_n]
+                * get_hamming_distance(
+                    hamming_setup.first_sequences[fig_143_n],
+                    perturbation_record.reference_state,
+                )
+                for fig_143_n in range(len(hamming_setup.linear_function))
+            ]
+        )
+        transition_ref_y = sum(
+            [
+                hamming_setup.linear_function[fig_143_o]
+                * get_hamming_distance(
+                    hamming_setup.second_sequences[fig_143_o],
+                    perturbation_record.reference_state,
+                )
+                for fig_143_o in range(len(hamming_setup.linear_function))
+            ]
+        )
+        transition_perturbed_x = sum(
+            [
+                hamming_setup.linear_function[fig_143_n]
+                * get_hamming_distance(
+                    hamming_setup.first_sequences[fig_143_n],
+                    list_of_perturbation_states[0][0],
+                )
+                for fig_143_n in range(len(hamming_setup.linear_function))
+            ]
+        )
+        transition_perturbed_y = sum(
+            [
+                hamming_setup.linear_function[fig_143_o]
+                * get_hamming_distance(
+                    hamming_setup.second_sequences[fig_143_o],
+                    list_of_perturbation_states[0][0],
+                )
+                for fig_143_o in range(len(hamming_setup.linear_function))
+            ]
+        )
+        plt.scatter(
+            transition_ref_x,
+            transition_ref_y,
+            marker=".",
+            color=bv_colors[
                 int(
                     len(bv_colors)
                     * perturbation_record.start_index
                     / len(boolean_network.bn_collapsed_cycles)
                 )
-            ]
-            transitions_line_style = "solid"
-            transitions_line_width = 2
-            transitions_label = "starting cycle"
-            transitions_alpha = 1
-        else:
-            transitions_color = bv_colors[
-                int(
-                    len(bv_colors)
-                    * perturbation_record.end_index
-                    / len(boolean_network.bn_collapsed_cycles)
-                )
-            ]
-            transitions_line_style = "solid"
-            transitions_line_width = 2
-            transitions_label = "ending cycle"
-            transitions_alpha = 1
-        each_x = []
-        each_y = []
-        for each_cycle_state in each_states_list:
-            each_x.append(
-                sum(
-                    [
-                        hamming_setup.linear_function[fig_143_n]
-                        * get_hamming_distance(
-                            hamming_setup.first_sequences[fig_143_n], each_cycle_state
-                        )
-                        for fig_143_n in range(len(hamming_setup.linear_function))
-                    ]
-                )
-            )
-            each_y.append(
-                sum(
-                    [
-                        hamming_setup.linear_function[fig_143_o]
-                        * get_hamming_distance(
-                            hamming_setup.second_sequences[fig_143_o], each_cycle_state
-                        )
-                        for fig_143_o in range(len(hamming_setup.linear_function))
-                    ]
-                )
-            )
-            if list_of_perturbation_states.index(each_states_list) == 0:
-                if each_cycle_state is each_states_list[-1]:
-                    end_of_transition_x = each_x[-1]
-                    end_of_transition_y = each_y[-1]
-        if (
-            len(each_x) == 2
-            and list_of_perturbation_states.index(each_states_list) != 0
-        ):
-            plt.scatter(
-                each_x,
-                each_y,
-                color=transitions_color,
-                linestyle=transitions_line_style,
-                marker="P",
-                linewidth=transitions_line_width,
-                alpha=transitions_alpha,
-                label=transitions_label,
-                s=100,
-            )
-        else:
-            plt.plot(
-                each_x,
-                each_y,
-                color=transitions_color,
-                linestyle=transitions_line_style,
-                linewidth=transitions_line_width,
-                alpha=transitions_alpha,
-                label=transitions_label,
-            )
-    transition_ref_x = sum(
-        [
-            hamming_setup.linear_function[fig_143_n]
-            * get_hamming_distance(
-                hamming_setup.first_sequences[fig_143_n],
-                perturbation_record.reference_state,
-            )
-            for fig_143_n in range(len(hamming_setup.linear_function))
-        ]
-    )
-    transition_ref_y = sum(
-        [
-            hamming_setup.linear_function[fig_143_o]
-            * get_hamming_distance(
-                hamming_setup.second_sequences[fig_143_o],
-                perturbation_record.reference_state,
-            )
-            for fig_143_o in range(len(hamming_setup.linear_function))
-        ]
-    )
-    transition_perturbed_x = sum(
-        [
-            hamming_setup.linear_function[fig_143_n]
-            * get_hamming_distance(
-                hamming_setup.first_sequences[fig_143_n],
-                list_of_perturbation_states[0][0],
-            )
-            for fig_143_n in range(len(hamming_setup.linear_function))
-        ]
-    )
-    transition_perturbed_y = sum(
-        [
-            hamming_setup.linear_function[fig_143_o]
-            * get_hamming_distance(
-                hamming_setup.second_sequences[fig_143_o],
-                list_of_perturbation_states[0][0],
-            )
-            for fig_143_o in range(len(hamming_setup.linear_function))
-        ]
-    )
-    plt.scatter(
-        transition_ref_x,
-        transition_ref_y,
-        marker=".",
-        color=bv_colors[
-            int(
-                len(bv_colors)
-                * perturbation_record.start_index
-                / len(boolean_network.bn_collapsed_cycles)
-            )
-        ],
-        label="reference state",
-        s=100,
-        alpha=0.6,
-    )
-    plt.scatter(
-        transition_perturbed_x,
-        transition_perturbed_y,
-        marker=".",
-        color="k",
-        alpha=0.75,
-        label="perturbed state",
-        s=80,
-    )
-    plt.plot(
-        [transition_ref_x, transition_perturbed_x],
-        [transition_ref_y, transition_perturbed_y],
-        linestyle="dotted",
-        linewidth=1,
-        color="k",
-    )
-    plt.scatter(
-        end_of_transition_x,
-        end_of_transition_y,
-        marker="x",
-        s=40,
-        alpha=0.75,
-        color="k",
-        label="end of transition",
-    )
-    plt.figlegend()
-    plt.show()
-
-
-# DONE Figure out error relating to reference state not in starting cycle states
+            ],
+            label="reference state",
+            s=100,
+            alpha=0.6,
+        )
+        plt.scatter(
+            transition_perturbed_x,
+            transition_perturbed_y,
+            marker=".",
+            color="k",
+            alpha=0.75,
+            label="perturbed state",
+            s=80,
+        )
+        plt.plot(
+            [transition_ref_x, transition_perturbed_x],
+            [transition_ref_y, transition_perturbed_y],
+            linestyle="dotted",
+            linewidth=1,
+            color="k",
+        )
+        plt.scatter(
+            end_of_transition_x,
+            end_of_transition_y,
+            marker="x",
+            s=40,
+            alpha=0.75,
+            color="k",
+            label="end of transition",
+        )
+        plt.text(plt.gca().get_xlim()[0], plt.gca().get_ylim()[1] + 1, f"Transition from {perturbation_record.start_index} to {perturbation_record.end_index}")
+        plt.figlegend()
+        plt.show()
 
 
 def plot_transition_s(
     boolean_network: BooleanNetwork,
     hamming_setup: HammingSetup,
-    transition_index: int,
-    text_plot_if_true: bool,
     bv_colors: list,
+    transition_index: int | None = None,
+    text_plot_if_true: bool = False,
 ):
     transitions_bool = True
     transitions_int = 0
@@ -3238,19 +3405,14 @@ def plot_transition_s(
     plt.show()
 
 
-def figure_3_5(
-    boolean_network: BooleanNetwork, hamming_setup: HammingSetup, bv_colors: list
+def text_hamming_transitions(
+    boolean_network: BooleanNetwork, hamming_setup: HammingSetup, bv_colors: list, num_transitions: int = 3
 ):
     """requires that parameter BooleanNetwork has computed unit perturbations matrix, or has a list of cycle
     UnitPerturbationRecords"""
-    # TODO add total for which start index != end index [ extent to which matrix is not diagonal ? ]
-    some_indices = get_transition_indices(boolean_network, 10)
+    some_indices = get_transition_indices(boolean_network, num_transitions)
     print(
-        "Figure 2.1: A transition from calculation of unit perturbations, as text output, and in the same Hamming space as above:"
-    )
-    plot_a_transition(boolean_network, hamming_setup, some_indices[0], True, bv_colors)
-    print(
-        "Figure 2.2: 9 transitions from calculation of unit perturbations in the same Hamming space as above:"
+        f"{num_transitions} transitions from calculation of unit perturbations:"
     )
     for tr_j in range(1, len(some_indices)):
         print(
@@ -3274,7 +3436,6 @@ def figure_3_5(
             )
             + " to cycle "
             + str(
-                # boolean_network.cycles_unit_perturbations_records[some_indices[tr_j]].end_index))
                 boolean_network.bn_collapsed_cycles.get_index(
                     boolean_network.cycles_unit_perturbations_records[
                         some_indices[tr_j]
@@ -3283,46 +3444,8 @@ def figure_3_5(
             )
         )
         plot_a_transition(
-            boolean_network, hamming_setup, some_indices[tr_j], False, bv_colors
+            boolean_network, hamming_setup, some_indices[tr_j], True, bv_colors, text_only=True
         )
-    # For all transitions between two cycles
-    print(
-        "Figure 2.3: All transitions between two cycles, in the same Hamming space as set in Hamming setup"
-    )
-    transitions_index_1 = get_transition_indices(boolean_network, 1)[0]
-    transitions_index_2 = 0
-    transitions_bool_3 = True
-    while transitions_bool_3:
-        for tr_m in range(
-            len(boolean_network.cycles_unit_perturbations_records)
-        ):  # Should really go through the matrix, check for both i,j and j,i entries non-zero but, this works, pretty slowly...
-            if (
-                boolean_network.cycles_unit_perturbations_records[tr_m].start_index
-                == boolean_network.cycles_unit_perturbations_records[
-                    transitions_index_1
-                ].end_index
-            ):
-                if (
-                    boolean_network.cycles_unit_perturbations_records[tr_m].end_index
-                    == boolean_network.cycles_unit_perturbations_records[
-                        transitions_index_1
-                    ].start_index
-                ):
-                    transitions_index_2 = tr_m
-        if transitions_index_2 == 0:
-            transitions_index_1 = get_transition_indices(boolean_network, 1)[0]
-        else:
-            transitions_bool_3 = False
-    # 11/18/2024: bug fix: reference states not on cycle states  # 12/1/2024 wondering whether this is due to reindexing cycles?
-    # yep, that was it- didn't have .notify() in some of sort functions
-    print("from cycle A to cycle B")
-    plot_transition_s(
-        boolean_network, hamming_setup, transitions_index_1, False, bv_colors
-    )
-    print("from cycle B to cycle A")
-    plot_transition_s(
-        boolean_network, hamming_setup, transitions_index_2, False, bv_colors
-    )
 
 
 # separately, a text plot method TODO simple text plot method (decomposition of earlier / above code)
@@ -3589,7 +3712,9 @@ def figure_abundances(boolean_network: BooleanNetwork, colors: list):
     """This figure assumes all cycles are 24 hours... and determines a common multiple of steps such that all cycles fit,
     TODO implement that: make random_setup_2 that takes B.N. as param and calculates as below
     """
-    # TODO MAKE FADING PLOTTING FROM INITIAL CONDITION, DASHED
+    abn = AbundantBooleanNetwork(1, [1], 2, 400, 0)
+    abn.from_boolean_network(boolean_network)
+    # TODO MAKE FADING PLOTTING FROM INITIAL CONDITION_S, ~DASHED
     cycle_lengths_set = set()
     common_multiple = 1
     for each_cycle in boolean_network.bn_collapsed_cycles.cycle_records:
