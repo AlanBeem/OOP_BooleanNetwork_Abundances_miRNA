@@ -6,51 +6,6 @@ from random import SystemRandom as rand
 import copy
 from package.plotting import get_colors
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-
-# # Sample categorical data
-# data = np.array([[0, 1, 2],
-#                  [1, 2, 0],
-#                  [2, 0, 1]])
-
-# # Define colors for categories
-# colors = ['red', 'green', 'blue']
-# cmap = ListedColormap(colors)
-
-# # Display the data with categorical colors
-# plt.imshow(data, cmap=cmap, interpolation='nearest')
-
-# # Add a colorbar with categorical labels
-# bounds = np.arange(len(colors) + 1) - 0.5
-# norm = plt.matplotlib.colors.BoundaryNorm(bounds, cmap.N)
-# cbar = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap),
-#                     ticks=np.arange(len(colors)),
-#                     boundaries=bounds)
-# cbar.ax.set_yticklabels(['Category A', 'Category B', 'Category C'])
-
-# plt.show()
-
-# import matplotlib.pyplot as plt
-# import numpy as np
-
-# # Define the color data as a NumPy array
-# color_data = np.array([
-#     [ [1, 0, 0], [0, 1, 0], [0, 0, 1] ], # Red, Green, Blue
-#     [ [1, 1, 0], [1, 0, 1], [0, 1, 1] ], # Yellow, Magenta, Cyan
-#     [ [1, 1, 1], [0.5, 0.5, 0.5], [0, 0, 0] ]  # White, Gray, Black
-# ])
-
-# # Display the color data as blocks
-# plt.imshow(color_data)
-# plt.xticks([])
-# plt.yticks([])
-# plt.show()
-#
-# # So, progress bars as lists of colors
-
-
 
 def seq_pert_report(p1, p2, goal_cycle_index, net: BooleanNetwork, cycle_colors: list = [], total_steps: int = 100, progress_div: int = 1, goal_bool: bool = False, p3: int | None = None, with_noise: str | float | None = None):
     
