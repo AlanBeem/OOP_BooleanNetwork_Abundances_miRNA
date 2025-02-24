@@ -94,7 +94,6 @@ def control_report(
             # step conditions[i][-1]
             conditions[i].append(next_state(conditions[i][-1], functions, inputs))
             #
-            # perturbation of conditions[i][-1]
             if (
                 with_noise is not None
                 and not isinstance(with_noise, str)
@@ -133,6 +132,7 @@ def control_report(
                         conditions[i][-1][perturb_node]
                     )
 
+            
         if step % progress_div == 0:
             progress_rows.append(
                 [
@@ -373,7 +373,7 @@ def seq_pert_report(
                         )
                 if (
                     with_noise is not None
-                    and not isinstance(with_noise, str)  # not a string, e.g. True
+                    and not isinstance(with_noise, str)
                     and rand().random() <= with_noise
                 ):
                     perturb_node = rand().randrange(0, len(net))
