@@ -1,6 +1,13 @@
 from package.abundant_boolean_networks import *
 
 
+# def binary_exponentiate(num: float | int, )
+    # for decimal exponent: same as for integer, but square root
+    # ex: 2^1.01 = 2^1. * 2^0.0 * 2^0.01
+    #            = 2    * 1     * 2^(1 / 100)
+    # consider using base-Phi (base = (sqrt(5) + 1) / 2)
+
+
 # circa 08-18-2024
 def random_abundant_nodes(abun_bn: AbundantBooleanNetwork, cycle_index: int):
     constant_node_index_list = []

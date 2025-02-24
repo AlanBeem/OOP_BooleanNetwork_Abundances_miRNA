@@ -517,7 +517,7 @@ class CollapsedCycles(Subject):
         self.most_recent_cycle_index = None
         self.cycle_records = []
         self.hashed_states = dict()
-        self.current_sort = ''
+        self.current_sort = ""
 
     def __len__(self):
         return len(self.cycle_records)
@@ -591,24 +591,24 @@ class CollapsedCycles(Subject):
             key=lambda p: 0 - p.num_observations
         )  # reverse=True keyword is also an option
         self.notify()
-        self.current_sort = 'num. observations'
+        self.current_sort = "num. observations"
 
     def sort_cycle_records_by_cycle_length(self):
         self.cycle_records.sort(key=lambda p: 0 - len(p))
         self.notify()
-        self.current_sort = 'cycle length'
+        self.current_sort = "cycle length"
 
     def sort_by_cycle_length_and_num_observations(self):
         self.cycle_records = sorted(self.cycle_records, reverse=True)
         self.notify()
-        self.current_sort = 'cycle length and num. observations'
+        self.current_sort = "cycle length and num. observations"
 
     def sort_cycle_records_by_hamming_diameter(self):
         self.cycle_records.sort(
             key=lambda p: 0 - get_hamming_diameter(p.cycle_states_list)
         )
         self.notify()
-        self.current_sort = 'Hamming diameter'
+        self.current_sort = "Hamming diameter"
 
     def sort_by_cycle_similarity(self, zero_cycle: CycleRecord):
         for each_record in self.cycle_records:
@@ -622,7 +622,7 @@ class CollapsedCycles(Subject):
                 )
         self.cycle_records.sort(key=lambda p: 0 - p.zero_distance)
         self.notify()
-        self.current_sort = 'cycle similarity'
+        self.current_sort = "cycle similarity"
 
     def get_hamm_cons_zero_cycle(self):
         pass
@@ -828,16 +828,15 @@ class CompositePerturbationRecord:
 #     def __init__(self):
 #         self.offset = 0
 #         self.data = bytearray()
-    
+
 #     def add_state(self, state):
 #         self.data.extend(state)
 #         self.offset += len(state)
-    
+
 #     def get_ints(self) -> tuple[int]:
 #         for i in range(len(self.data)):
 #             b = '0b' + ''.join([str(int(s[i])) for i in range(len(s))])
 #             net_states.extend((int(b, base=2) net.bn_collapsed_cycles.get_index(s)))
-
 
 
 class BooleanNetwork:
@@ -1033,8 +1032,16 @@ class BooleanNetwork:
         for as_i in range(len(self.nodes)):
             self.current_states_list[-1].append(
                 self.nodes[as_i].function.get_boolean(
-                    bool(self.current_states_list[-2][self.node_inputs_assignments[as_i][0]]),
-                    bool(self.current_states_list[-2][self.node_inputs_assignments[as_i][1]]),
+                    bool(
+                        self.current_states_list[-2][
+                            self.node_inputs_assignments[as_i][0]
+                        ]
+                    ),
+                    bool(
+                        self.current_states_list[-2][
+                            self.node_inputs_assignments[as_i][1]
+                        ]
+                    ),
                 )
             )
         self.total_advance_states += 1

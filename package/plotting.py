@@ -9,7 +9,10 @@ import matplotlib.patches as patches
 
 # revised
 
-def binary_states(net: BooleanNetwork, setup_colors, goal_cycle_index, plt) -> plt.figure:
+
+def binary_states(
+    net: BooleanNetwork, setup_colors, goal_cycle_index, plt
+) -> plt.figure:
     # tuple of binary num, cycle index, sort by binary num
     #
     net.bn_collapsed_cycles.sort_cycle_records_by_num_observations()
@@ -20,8 +23,10 @@ def binary_states(net: BooleanNetwork, setup_colors, goal_cycle_index, plt) -> p
     traj_net_states = []
     for r in net.list_of_all_run_ins:
         for s in r:
-            b = '0b' + ''.join([str(int(s[i])) for i in range(len(s))])
-            traj_net_states.append((int(b, base=2), net.bn_collapsed_cycles.get_index(r[-1])))
+            b = "0b" + "".join([str(int(s[i])) for i in range(len(s))])
+            traj_net_states.append(
+                (int(b, base=2), net.bn_collapsed_cycles.get_index(r[-1]))
+            )
     traj_net_states.sort(key=lambda p: p[0])
     #
     x = []
@@ -35,13 +40,13 @@ def binary_states(net: BooleanNetwork, setup_colors, goal_cycle_index, plt) -> p
         else:
             y.append(n_s[1])
             c.append(setup_colors[n_s[1] % len(setup_colors)])
-    axs[0].scatter(x,  y, c=c, alpha=0.15, marker='|', s=10, label='trajectory state')
+    axs[0].scatter(x, y, c=c, alpha=0.15, marker="|", s=10, label="trajectory state")
     #
     goal_states = []
     net_states = []
     for r in net.bn_collapsed_cycles.cycle_records:
         for s in r.cycle_states_list:
-            b = int('0b' + ''.join([str(int(s[i])) for i in range(len(s))]), base=2)
+            b = int("0b" + "".join([str(int(s[i])) for i in range(len(s))]), base=2)
             net_states.append((b, net.bn_collapsed_cycles.get_index(s)))
             if net.bn_collapsed_cycles.cycle_records.index(r) == goal_cycle_index:
                 goal_states.append(b)
@@ -58,43 +63,79 @@ def binary_states(net: BooleanNetwork, setup_colors, goal_cycle_index, plt) -> p
         else:
             y.append(n_s[1])
             c.append(setup_colors[n_s[1] % len(setup_colors)])
-    axs[0].scatter(x,  y, c=c, alpha=0.4, label='cycle state', marker='o', s=50)
+    axs[0].scatter(x, y, c=c, alpha=0.4, label="cycle state", marker="o", s=50)
     # plt.xscale('')
     # axs[0].set_title(f"{str(net)}\n\ngoal states: cycle: {goal_cycle_index} (in box)")  # There are orderings of the nodes that makes this more meaningful
-    axs[0].text(-axs[0].get_xlim()[1] / 2, axs[0].get_ylim()[1] + 2, f"{str(net)}\n\ngoal states: cycle: {goal_cycle_index} (in box)")
-    axs[0].set_xlabel('states as binary integers')
-    axs[0].set_xticks(ticks = [], labels = [])
-    axs[0].set_yticks(ticks=[i for i in range(len(net.bn_collapsed_cycles.cycle_records))], labels=[f"cycle length: {len(c)}, " + f"num. obs.: {c.num_observations}" for c in net.bn_collapsed_cycles.cycle_records])
+    axs[0].text(
+        -axs[0].get_xlim()[1] / 2,
+        axs[0].get_ylim()[1] + 2,
+        f"{str(net)}\n\ngoal states: cycle: {goal_cycle_index} (in box)",
+    )
+    axs[0].set_xlabel("states as binary integers")
+    axs[0].set_xticks(ticks=[], labels=[])
+    axs[0].set_yticks(
+        ticks=[i for i in range(len(net.bn_collapsed_cycles.cycle_records))],
+        labels=[
+            f"cycle {net.bn_collapsed_cycles.cycle_records.index(c) + 1}, cycle length: {len(c)}, " + f"num. obs.: {c.num_observations}"
+            for c in net.bn_collapsed_cycles.cycle_records
+        ],
+    )
     axs[0].legend()
     # plt.show()
 
     # Define the bounding box coordinates and dimensions
-    x_min, x_max = min(goal_states) - axs[0].get_xlim()[1] / 20, max(goal_states) + axs[0].get_xlim()[1] / 20
+    x_min, x_max = (
+        min(goal_states) - axs[0].get_xlim()[1] / 20,
+        max(goal_states) + axs[0].get_xlim()[1] / 20,
+    )
     y_min, y_max = goal_cycle_index - 0.5, goal_cycle_index + 0.5
     width = x_max - x_min
     height = y_max - y_min
 
     # Create a Rectangle patch
-    rect = patches.Rectangle((x_min, y_min), width, height, 
-                            linewidth=1, edgecolor='k', facecolor='none', alpha = 0.6)
+    rect = patches.Rectangle(
+        (x_min, y_min),
+        width,
+        height,
+        linewidth=1,
+        edgecolor="k",
+        facecolor="none",
+        alpha=0.6,
+    )
 
     # Add the patch to the Axes
     axs[0].add_patch(rect)
 
     fig.set_size_inches(12, 8)
 
-    run_in = goal_cycle_index
-    axs[1].text(0, -2, f"steps of {get_ordinal_string(run_in, True)} cycle: ")
-    axs[1].imshow(np.transpose(net.bn_collapsed_cycles.cycle_records[run_in].cycle_states_list), cmap='gist_stern')
-    axs[1].set_yticks(ticks = [i for i in range(len(net))], labels = ["node " + str(i + 1) for i in range(len(net))])
+    axs[1].text(0, -2, f"steps of {get_ordinal_string(goal_cycle_index + 1, True)} cycle: ")
+    axs[1].imshow(
+        np.transpose(net.bn_collapsed_cycles.cycle_records[goal_cycle_index].cycle_states_list),
+        cmap="gist_stern",
+    )
+    axs[1].set_yticks(
+        ticks=[i for i in range(len(net))],
+        labels=["node " + str(i + 1) for i in range(len(net))],
+    )
     # plt.yticks(ticks = [], labels = [])
-    axs[1].set_xticks(ticks = [i for i in range(len(net.bn_collapsed_cycles.cycle_records[run_in].cycle_states_list))],
-            labels = [(f"{i}" if i in [0] + [2**k for k in range(5)] else "") for i in range(len(net.bn_collapsed_cycles.cycle_records[run_in].cycle_states_list))])
+    axs[1].set_xticks(
+        ticks=[
+            i
+            for i in range(
+                len(net.bn_collapsed_cycles.cycle_records[goal_cycle_index].cycle_states_list)
+            )
+        ],
+        labels=[
+            (f"{i}" if i in [0] + [2**k for k in range(5)] else "")
+            for i in range(
+                len(net.bn_collapsed_cycles.cycle_records[goal_cycle_index].cycle_states_list)
+            )
+        ],
+    )
     # fig.set_size_inches(12, 12)
     axs[1].tick_params(top=True, labeltop=True, bottom=False, labelbottom=False)
 
     return fig
-
 
 
 # def bw_node_states(net: BooleanNetwork, states_list, text_title: str | None = None) -> plt.figure:
@@ -104,7 +145,7 @@ def binary_states(net: BooleanNetwork, setup_colors, goal_cycle_index, plt) -> p
 #     if run_in_index is None and states_list is None:
 #         run_in = SystemRandom().randrange(0, len(net.list_of_all_run_ins))
 #         states_list = net.list_of_all_run_ins[run_in]
-        
+
 #     else:
 #         if not run_in_index is None:
 #             states_list = net.list_of_all_run_ins[run_in]
@@ -146,21 +187,29 @@ def updated_trajectories(bn: BooleanNetwork, bv_colors, run_ins: int = 300):
     count = 0
     fig = plt.figure()
     c_records = bn.bn_collapsed_cycles.cycle_records
-    for record in (c_records):
+    for record in c_records:
         see_run = TrajectoryCycleGraph()
         see_run.set_cycle(record.cycle_states_list)
         nodes = []
     for _ in range(run_ins):
         bn.add_cycle()
-        nodes.extend(see_run.add_all(run_in_as_edges(bn.current_states_list), edge_weights(bn.current_states_list)))        
+        nodes.extend(
+            see_run.add_all(
+                run_in_as_edges(bn.current_states_list),
+                edge_weights(bn.current_states_list),
+            )
+        )
         # fig.clear(keep_observers=True)
         fig.clear(keep_observers=True)
-        plt.title(f"cycle length: {len(record)}, number of observations: {record.num_observations}")
+        plt.title(
+            f"cycle length: {len(record)}, number of observations: {record.num_observations}"
+        )
         see_run.visualize_nx(reversed=False)
         plt.show()
         time.sleep(1)
-    print(bn)   
+    print(bn)
     print(f"2^N = 2^{len(bn)} = {2**len(bn)}")
+
 
 def text_plot_cycle(network: BooleanNetwork, index: int = 0):
     network.bn_collapsed_cycles.sort_cycle_records_by_cycle_length()
@@ -171,9 +220,7 @@ def text_plot_cycle(network: BooleanNetwork, index: int = 0):
         str(f'{"node " + str(tbn_k + 1) + ": ":>11s}')
         for tbn_k in range(len(cycle_states_list[0]))
     ]  # one for each node
-    for (
-        each_list_1
-    ) in cycle_states_list:  # each list is of length number of nodes
+    for each_list_1 in cycle_states_list:  # each list is of length number of nodes
         for tbn_l in range(len(cycle_states_list[0])):  # for each node
             # ## From Python documentation: f'result: {value:{width}.{precision}}' ##
             node_cycles_string_list[tbn_l] += str(f"{str(int(each_list_1[tbn_l])):^5s}")
@@ -203,12 +250,10 @@ def get_colors(at_least: int, shuffled_if_true: bool) -> list:
     got_colors = cm.nipy_spectral(
         np.linspace(0, 1, int(2 * at_least / 5) + 1, True)
     ).tolist()
-    got_colors.extend(cm.gist_stern(
-        np.linspace(0.05, 0.8, 4, True)
-    ).tolist())
-    got_colors.extend(cm.gist_earth(
-        np.linspace(0.1, 0.9, int(2 * at_least / 5), True)
-    ).tolist())
+    got_colors.extend(cm.gist_stern(np.linspace(0.05, 0.8, 4, True)).tolist())
+    got_colors.extend(
+        cm.gist_earth(np.linspace(0.1, 0.9, int(2 * at_least / 5), True)).tolist()
+    )
     if shuffled_if_true:
         shuffle(got_colors)
         # while len(got_colors) > 0:
@@ -991,9 +1036,37 @@ def plot_polar_cycles_cons_hamm(
 #         plt.show()
 
 
+def bv_histogram(boolean_network: BooleanNetwork, cycle_colors: list, stacked: bool = False) -> plt.figure:
+    #
+    fig = plt.figure()
+    #
+    if not stacked:
+        ppc_radius = []
+    else:
+        data = []
+    for ppc_k in range(len(boolean_network.bn_collapsed_cycles)):
+        if stacked:
+            data.append([])
+        for ppc_j in range(len(boolean_network.bn_collapsed_cycles.cycle_records[ppc_k].cycle_states_list)):
+            (ppc_radius if not stacked else data[-1]).append(
+                get_hamming_distance(
+                    boolean_network.bn_collapsed_cycles.cycle_records[ppc_k][
+                        ppc_j
+                    ],
+                    boolean_network.bn_collapsed_cycles.cycle_records[ppc_k][
+                        ppc_j - 1
+                    ],
+                )
+            )
+        if stacked:
+            plt.hist(data, stacked=True)
+    if not stacked:
+        plt.hist(ppc_radius)
+    return fig
+
 
 def plot_polar_cycles_bv(
-    boolean_network: BooleanNetwork, plot_one_period_if_true: bool, bv_colors
+    boolean_network: BooleanNetwork, plot_one_period_if_true: bool, bv_colors,
 ):
     align_cycle_states_lists_of_cc_to_cons_seq(boolean_network.bn_collapsed_cycles)
     #
@@ -1753,9 +1826,6 @@ def plot_target_sites(
         for each_target_site in target_sites_to_print:
             print(each_target_site)
             print()
-
-
-
 
 
 def figure_1_2(boolean_network: BooleanNetwork, cycle_record_index: int):
@@ -2937,11 +3007,13 @@ def plot_a_transition(
     hamming_setup: HammingSetup,
     bv_colors: list,
 ):
-        # Originally referred to Figure 1 data, TBD TODO Objects for figures and object for whole thing
+    # Originally referred to Figure 1 data, TBD TODO Objects for figures and object for whole thing
     end_of_transition_x = None
     end_of_transition_y = None
     perturbation_record = boolean_network.cycles_unit_perturbations_records[
-        SystemRandom().randrange(0, len(boolean_network.cycles_unit_perturbations_records))
+        SystemRandom().randrange(
+            0, len(boolean_network.cycles_unit_perturbations_records)
+        )
     ]
     if (
         perturbation_record.end_index is None
@@ -2965,7 +3037,7 @@ def plot_a_transition(
                 perturbation_record.end_index
             ].cycle_states_list,
         ]
-    
+
         # print(list_of_perturbation_states)  # was for debugging- now prints bytearrays TODO check on whether this makes string comparisons more whack
         # Hamming space output
         for each_states_list in list_of_perturbation_states:
@@ -3007,7 +3079,8 @@ def plot_a_transition(
                         [
                             hamming_setup.linear_function[fig_143_n]
                             * get_hamming_distance(
-                                hamming_setup.first_sequences[fig_143_n], each_cycle_state
+                                hamming_setup.first_sequences[fig_143_n],
+                                each_cycle_state,
                             )
                             for fig_143_n in range(len(hamming_setup.linear_function))
                         ]
@@ -3018,7 +3091,8 @@ def plot_a_transition(
                         [
                             hamming_setup.linear_function[fig_143_o]
                             * get_hamming_distance(
-                                hamming_setup.second_sequences[fig_143_o], each_cycle_state
+                                hamming_setup.second_sequences[fig_143_o],
+                                each_cycle_state,
                             )
                             for fig_143_o in range(len(hamming_setup.linear_function))
                         ]
@@ -3133,7 +3207,11 @@ def plot_a_transition(
             color="k",
             label="end of transition",
         )
-        plt.text(plt.gca().get_xlim()[0], plt.gca().get_ylim()[1] + 1, f"Transition from {perturbation_record.start_index} to {perturbation_record.end_index}")
+        plt.text(
+            plt.gca().get_xlim()[0],
+            plt.gca().get_ylim()[1] + 1,
+            f"Transition from {perturbation_record.start_index} to {perturbation_record.end_index}",
+        )
         plt.figlegend()
         plt.show()
 
@@ -3406,14 +3484,15 @@ def plot_transition_s(
 
 
 def text_hamming_transitions(
-    boolean_network: BooleanNetwork, hamming_setup: HammingSetup, bv_colors: list, num_transitions: int = 3
+    boolean_network: BooleanNetwork,
+    hamming_setup: HammingSetup,
+    bv_colors: list,
+    num_transitions: int = 3,
 ):
     """requires that parameter BooleanNetwork has computed unit perturbations matrix, or has a list of cycle
     UnitPerturbationRecords"""
     some_indices = get_transition_indices(boolean_network, num_transitions)
-    print(
-        f"{num_transitions} transitions from calculation of unit perturbations:"
-    )
+    print(f"{num_transitions} transitions from calculation of unit perturbations:")
     for tr_j in range(1, len(some_indices)):
         print(
             "1 of "
@@ -3444,7 +3523,12 @@ def text_hamming_transitions(
             )
         )
         plot_a_transition(
-            boolean_network, hamming_setup, some_indices[tr_j], True, bv_colors, text_only=True
+            boolean_network,
+            hamming_setup,
+            some_indices[tr_j],
+            True,
+            bv_colors,
+            text_only=True,
         )
 
 
