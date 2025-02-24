@@ -1,4 +1,5 @@
 import numpy as np
+
 # Plotting functions composed in a Jupyter Notebook then accumulated here
 import matplotlib.pyplot as plt
 import networkx as nx

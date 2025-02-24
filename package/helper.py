@@ -42,13 +42,12 @@ def get_weighted_consensus_sequence_list(
         for i in range(len(sequences)):  # which sequence
             for j in range(len(sequences[0])):
                 for k in range(len(seq_elements)):
-                    if (
-                        sequences[i][j]
-                        == seq_elements[k]
-                    ):
+                    if sequences[i][j] == seq_elements[k]:
                         element_counts[j][
                             k  # alternatively, use .index(element), but still O(n), n::=|sequence elements|
-                        ] += weights_list[i]   # which weight
+                        ] += weights_list[
+                            i
+                        ]  # which weight
         for w_cons_seq_list_q in range(len(element_counts)):
             max_count = 0
             index_max_count = -1
