@@ -3,6 +3,8 @@ This is a collection of Python files providing objects representing behavior of 
 
 ### TODO:
 
+Write an efficient numpy version with the same data visualization capabilities
+
 Revise variable names
 
 Implement hash table based lookups where applicable
