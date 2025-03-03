@@ -16,16 +16,16 @@ def control_report(
     progress_div: int = 1,
     with_noise: str | float | None = None,
     frequency_stacked: bool = False,
-    show_legend: bool = False,
+    show_legend: bool = True,
+    goal_cycle_index: int = -1,
+    goal_dfa: bool = False
 ):
 
     if cycle_colors == []:
         cycle_colors = get_colors(len(net.bn_collapsed_cycles.cycle_records), True)
 
     cycle_colors = [
-        (
-            [cc[0], cc[1], cc[2], cc[3]]
-        )
+        ([cc[0], cc[1], cc[2], cc[3]])
         for cc, i in zip(cycle_colors, range(len(cycle_colors)))
         if i < len(net.bn_collapsed_cycles.cycle_records)
     ]
@@ -33,6 +33,8 @@ def control_report(
 
     cycle_labels = ["cycle " + str(i + 1) for i in range(len(cycle_colors))]
     cycle_labels[-1] = "None"
+    if goal_cycle_index != -1:
+        cycle_labels[goal_cycle_index] = f"({cycle_labels[goal_cycle_index]})"
 
     patches = []
     for i in range(len(cycle_labels)):
@@ -42,7 +44,7 @@ def control_report(
         fig_leg, ax = plt.subplots()
         fig_leg.set_size_inches(10, 1)
         ax.set_axis_off()
-        ax.legend(handles=patches)
+        ax.legend(handles=patches, mode="expand", ncols=6)
         plt.show()
 
     # functions setup
@@ -66,11 +68,11 @@ def control_report(
             return bytearray(
                 (
                     (
-                        not functions[i](
+                        not functions[i](  # then perturbs...
                             bool(state[inputs[i][0]]), bool(state[inputs[i][1]])
                         )
                     )
-                    if i == perturb
+                    if i == perturb  # ...if to perturb
                     else functions[i](
                         bool(state[inputs[i][0]]), bool(state[inputs[i][1]])
                     )
@@ -94,45 +96,45 @@ def control_report(
             # step conditions[i][-1]
             conditions[i].append(next_state(conditions[i][-1], functions, inputs))
             #
-            if (
-                with_noise is not None
-                and not isinstance(with_noise, str)
-                and rand().random() <= with_noise
-            ):
-                perturb_node = rand().randrange(0, len(net))
-                conditions[i][-1][perturb_node] = not bool(
-                    conditions[i][-1][perturb_node]
-                )
-            elif (
-                with_noise is not None
-                and isinstance(with_noise, str)
-                and with_noise == "bv"
-            ):
-                prev_step_bv = sum(
-                    int(conditions[i][-2][k] != conditions[i][-1][k])
-                    for k in range(len(conditions[i][-1]))
-                ) / len(net)
-                if rand().random() * (1 - prev_step_bv) < 0.05:
+            if not (net.bn_collapsed_cycles.get_index(conditions[i][-1]) == goal_cycle_index and goal_dfa):
+                if (
+                    with_noise is not None
+                    and not isinstance(with_noise, str)
+                    and rand().random() <= with_noise
+                ):
                     perturb_node = rand().randrange(0, len(net))
                     conditions[i][-1][perturb_node] = not bool(
                         conditions[i][-1][perturb_node]
                     )
-            elif (
-                with_noise is not None
-                and isinstance(with_noise, str)
-                and with_noise == "inverse bv"
-            ):
-                prev_step_bv = sum(
-                    int(conditions[i][-2][k] != conditions[i][-1][k])
-                    for k in range(len(conditions[i][-1]))
-                ) / len(net)
-                if rand().random() < 0.05 * (1 - prev_step_bv):
-                    perturb_node = rand().randrange(0, len(net))
-                    conditions[i][-1][perturb_node] = not bool(
-                        conditions[i][-1][perturb_node]
-                    )
+                elif (
+                    with_noise is not None
+                    and isinstance(with_noise, str)
+                    and with_noise == "bv"
+                ):
+                    prev_step_bv = sum(
+                        int(conditions[i][-2][k] != conditions[i][-1][k])
+                        for k in range(len(conditions[i][-1]))
+                    ) / len(net)
+                    if rand().random() * (1 - prev_step_bv) < 0.05:
+                        perturb_node = rand().randrange(0, len(net))
+                        conditions[i][-1][perturb_node] = not bool(
+                            conditions[i][-1][perturb_node]
+                        )
+                elif (
+                    with_noise is not None
+                    and isinstance(with_noise, str)
+                    and with_noise == "inverse bv"
+                ):
+                    prev_step_bv = sum(
+                        int(conditions[i][-2][k] != conditions[i][-1][k])
+                        for k in range(len(conditions[i][-1]))
+                    ) / len(net)
+                    if rand().random() < 0.05 * (1 - prev_step_bv):
+                        perturb_node = rand().randrange(0, len(net))
+                        conditions[i][-1][perturb_node] = not bool(
+                            conditions[i][-1][perturb_node]
+                        )
 
-            
         if step % progress_div == 0:
             progress_rows.append(
                 [
@@ -155,7 +157,7 @@ def control_report(
 
     if not frequency_stacked:
         fig = plt.figure()
-        plt.imshow(progress_rows, aspect=1/8)
+        plt.imshow(progress_rows, aspect=1 / 8)
         #
         return fig
         #
@@ -163,13 +165,12 @@ def control_report(
         fig1 = plt.figure()
         # plt.imshow(progress_rows, cmap=cmap)
         # from: https://stackoverflow.com/a/10970122/25597680, aspect
-        plt.imshow(progress_rows, aspect=1/8)
+        plt.imshow(progress_rows, aspect=1 / 8)
         fig2 = plt.figure()
-        plt.imshow(stacked_rows, aspect=1/8)
+        plt.imshow(stacked_rows, aspect=1 / 8)
         #
         return fig1, fig2
         #
-
 
 
 def seq_pert_report(
@@ -203,9 +204,10 @@ def seq_pert_report(
     # lower alpha for non-goal states
     cycle_colors = [
         (
-            [cc[0], cc[1], cc[2], 0.5]
-            if i != goal_cycle_index
-            else [cc[0], cc[1], cc[2], cc[3]]
+            # [cc[0], cc[1], cc[2], 0.5]
+            # if i != goal_cycle_index
+            # else [cc[0], cc[1], cc[2], cc[3]]
+            [cc[0], cc[1], cc[2], cc[3]]
         )
         for cc, i in zip(cycle_colors, range(len(cycle_colors)))
         if i < len(net.bn_collapsed_cycles.cycle_records)
@@ -213,21 +215,29 @@ def seq_pert_report(
 
     # white for states | cycle index = None
     cycle_colors.append([1, 1, 1, 1])
-    
+
     cycle_labels = ["cycle " + str(i + 1) for i in range(len(cycle_colors))]
     cycle_labels[-1] = "None"
+
+    cycle_labels[goal_cycle_index] = f"({cycle_labels[goal_cycle_index]})"
 
     patches = []
     for i in range(len(cycle_labels)):
         patches.append(mpatches.Patch(color=cycle_colors[i], label=cycle_labels[i]))
 
     if show_legend:
+        print("goal cycle is in parentheses")
         fig_leg, ax = plt.subplots()
         fig_leg.set_size_inches(10, 1)
         ax.set_axis_off()
-        ax.legend(handles=patches)
+        ax.legend(handles=patches, mode="expand", ncols=6)
+        # plt.rc('text', usetex=True)
+        # for text in ax.legend().get_texts():
+        #     if text.get_text() == f"cycle {goal_cycle_index + 1}":
+        #         text.set_text("(" + text.get_text() + ")")
+        #         # text.set_text("$\underline\{" + text.get_text() + "\}$")
+        #         break
         plt.show()
-        
 
     # functions setup
     # initial conditions: 1 of each cycle state
@@ -438,7 +448,7 @@ def seq_pert_report(
 
     if not frequency_stacked:
         fig = plt.figure()
-        plt.imshow(progress_rows, aspect=1/8)
+        plt.imshow(progress_rows, aspect=1 / 8)
         #
         return fig
         #
@@ -446,9 +456,9 @@ def seq_pert_report(
         fig1 = plt.figure()
         # plt.imshow(progress_rows, cmap=cmap)
         # from: https://stackoverflow.com/a/10970122/25597680, aspect
-        plt.imshow(progress_rows, aspect=1/8)
+        plt.imshow(progress_rows, aspect=1 / 8)
         fig2 = plt.figure()
-        plt.imshow(stacked_rows, aspect=1/8)
+        plt.imshow(stacked_rows, aspect=1 / 8)
         #
         return fig1, fig2
         #
