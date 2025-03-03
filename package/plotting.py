@@ -1,3 +1,4 @@
+# TODO Objects for figures and object for whole thing
 # Plotting functions composed in a Jupyter Notebook then accumulated here
 import time
 from package.bn_graph_methods import *
@@ -6,8 +7,6 @@ from package.abundant_boolean_networks_with_micro_rna import *
 from package.abn_mir_plotting_functions import HammingSetup
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-
-# revised
 
 
 def binary_states(
@@ -69,14 +68,15 @@ def binary_states(
     axs[0].text(
         -axs[0].get_xlim()[1] / 2,
         axs[0].get_ylim()[1] + 2,
-        f"{str(net)}\n\ngoal states: cycle: {goal_cycle_index} (in box)",
+        f"{str(net)}\n\ngoal states: cycle: {goal_cycle_index + 1} (in box)",
     )
     axs[0].set_xlabel("states as binary integers")
     axs[0].set_xticks(ticks=[], labels=[])
     axs[0].set_yticks(
         ticks=[i for i in range(len(net.bn_collapsed_cycles.cycle_records))],
         labels=[
-            f"cycle {net.bn_collapsed_cycles.cycle_records.index(c) + 1}, cycle length: {len(c)}, " + f"num. obs.: {c.num_observations}"
+            f"cycle {net.bn_collapsed_cycles.cycle_records.index(c) + 1}, cycle length: {len(c)}, "
+            + f"num. obs.: {c.num_observations}"
             for c in net.bn_collapsed_cycles.cycle_records
         ],
     )
@@ -108,10 +108,16 @@ def binary_states(
 
     fig.set_size_inches(12, 8)
 
-    axs[1].text(0, -2, f"steps of {get_ordinal_string(goal_cycle_index + 1, True)} cycle: ")
+    axs[1].text(
+        0,
+        axs[1].get_ylim()[0] - math.sqrt(len(net)),
+        f"steps of {get_ordinal_string(goal_cycle_index + 1, True)} cycle:\nON: black, OFF: white"
+        )
     axs[1].imshow(
-        np.transpose(net.bn_collapsed_cycles.cycle_records[goal_cycle_index].cycle_states_list),
-        cmap="gist_stern",
+        np.transpose(
+            net.bn_collapsed_cycles.cycle_records[goal_cycle_index].cycle_states_list
+        ),
+        cmap="binary",  # was: "gist_stern"
     )
     axs[1].set_yticks(
         ticks=[i for i in range(len(net))],
@@ -122,13 +128,21 @@ def binary_states(
         ticks=[
             i
             for i in range(
-                len(net.bn_collapsed_cycles.cycle_records[goal_cycle_index].cycle_states_list)
+                len(
+                    net.bn_collapsed_cycles.cycle_records[
+                        goal_cycle_index
+                    ].cycle_states_list
+                )
             )
         ],
         labels=[
             (f"{i}" if i in [0] + [2**k for k in range(5)] else "")
             for i in range(
-                len(net.bn_collapsed_cycles.cycle_records[goal_cycle_index].cycle_states_list)
+                len(
+                    net.bn_collapsed_cycles.cycle_records[
+                        goal_cycle_index
+                    ].cycle_states_list
+                )
             )
         ],
     )
@@ -839,6 +853,7 @@ def get_least_common_multiple(
     return glcm_return_int
 
 
+# TODO refactor into single method with options for radius, str, str, or function (e.g. multiply BV by Hamming distance)
 def plot_polar_cycles_cons_hamm(
     boolean_network: BooleanNetwork, plot_one_period_if_true: bool, bv_colors
 ):
@@ -861,10 +876,10 @@ def plot_polar_cycles_cons_hamm(
         for each_cycle in boolean_network.bn_collapsed_cycles.cycle_records:
             ppc_cycle_lengths_set.add(max(1, len(each_cycle)))
         # ppc_least_common_multiple = get_least_common_multiple(ppc_cycle_lengths_set)
-        ppc_least_common_multiple = list(np.lcm.reduce(ppc_cycle_lengths_set))[0]
-        print(f"ppc_least_common_multiple: {ppc_least_common_multiple}")
+        # ppc_least_common_multiple = list(np.lcm.reduce(ppc_cycle_lengths_set))[0]
+        # print(f"ppc_least_common_multiple: {ppc_least_common_multiple}")
         ppc_least_common_multiple = max(np.gcd.reduce(ppc_cycle_lengths_set))
-        print(f"ppc_least_common_multiple: {ppc_least_common_multiple}")
+        # print(f"ppc_least_common_multiple: {ppc_least_common_multiple}")
         print(
             "Theta: 1 step == "
             + (str(2 * math.pi / ppc_least_common_multiple))
@@ -1036,7 +1051,13 @@ def plot_polar_cycles_cons_hamm(
 #         plt.show()
 
 
-def bv_histogram(boolean_network: BooleanNetwork, cycle_colors: list, stacked: bool = False) -> plt.figure:
+def bv_histogram(
+    boolean_network: BooleanNetwork,
+    cycle_colors: list,
+    stacked: bool = False,
+    line_hist: bool = False,
+    norm_x: bool = False,
+) -> plt.figure:
     #
     fig = plt.figure()
     #
@@ -1047,26 +1068,33 @@ def bv_histogram(boolean_network: BooleanNetwork, cycle_colors: list, stacked: b
     for ppc_k in range(len(boolean_network.bn_collapsed_cycles)):
         if stacked:
             data.append([])
-        for ppc_j in range(len(boolean_network.bn_collapsed_cycles.cycle_records[ppc_k].cycle_states_list)):
+        for ppc_j in range(
+            len(
+                boolean_network.bn_collapsed_cycles.cycle_records[
+                    ppc_k
+                ].cycle_states_list
+            )
+        ):
             (ppc_radius if not stacked else data[-1]).append(
                 get_hamming_distance(
-                    boolean_network.bn_collapsed_cycles.cycle_records[ppc_k][
-                        ppc_j
-                    ],
-                    boolean_network.bn_collapsed_cycles.cycle_records[ppc_k][
-                        ppc_j - 1
-                    ],
-                )
+                    boolean_network.bn_collapsed_cycles.cycle_records[ppc_k][ppc_j],
+                    boolean_network.bn_collapsed_cycles.cycle_records[ppc_k][ppc_j - 1],
+                ) / (1 if not norm_x else len(boolean_network))  # norm_x operates here
             )
         if stacked:
-            plt.hist(data, stacked=True)
+            if not line_hist:
+                plt.hist(data, stacked=True, color=list(cycle_colors[s] for s in range(len(data))), bins=len(boolean_network))
+            else:
+                plt.hist(data, stacked=True, color=list(cycle_colors[s] for s in range(len(data))), bins=len(boolean_network))
     if not stacked:
-        plt.hist(ppc_radius)
+        plt.hist(ppc_radius, bins=len(boolean_network))
     return fig
 
 
 def plot_polar_cycles_bv(
-    boolean_network: BooleanNetwork, plot_one_period_if_true: bool, bv_colors,
+    boolean_network: BooleanNetwork,
+    plot_one_period_if_true: bool,
+    bv_colors,
 ):
     align_cycle_states_lists_of_cc_to_cons_seq(boolean_network.bn_collapsed_cycles)
     #
@@ -1076,10 +1104,10 @@ def plot_polar_cycles_bv(
         ppc_cycle_lengths_set = set()
         for each_cycle in boolean_network.bn_collapsed_cycles.cycle_records:
             ppc_cycle_lengths_set.add(max(1, len(each_cycle)))
-        ppc_least_common_multiple = list(np.lcm.reduce(ppc_cycle_lengths_set))[0]
-        print(f"ppc_least_common_multiple: {ppc_least_common_multiple}")
+        # ppc_least_common_multiple = list(np.lcm.reduce(ppc_cycle_lengths_set))[0]
+        # print(f"ppc_least_common_multiple: {ppc_least_common_multiple}")
         ppc_least_common_multiple = max(np.gcd.reduce(ppc_cycle_lengths_set))
-        print(f"ppc_least_common_multiple: {ppc_least_common_multiple}")
+        # print(f"ppc_least_common_multiple: {ppc_least_common_multiple}")
         print(
             "Theta: 1 step == "
             + (str(2 * math.pi / ppc_least_common_multiple))
@@ -3007,7 +3035,7 @@ def plot_a_transition(
     hamming_setup: HammingSetup,
     bv_colors: list,
 ):
-    # Originally referred to Figure 1 data, TBD TODO Objects for figures and object for whole thing
+
     end_of_transition_x = None
     end_of_transition_y = None
     perturbation_record = boolean_network.cycles_unit_perturbations_records[
@@ -3015,10 +3043,7 @@ def plot_a_transition(
             0, len(boolean_network.cycles_unit_perturbations_records)
         )
     ]
-    if (
-        perturbation_record.end_index is None
-    ):  # 08-17-2024 end_index of None (I think) came up, could be start_index
-        # if it's start_index there's errors elsewhere, ... , TODO unittest
+    if perturbation_record.end_index is None:
         print("Perturbation record end_index is None, plotting run_in as ending cycle:")
         list_of_perturbation_states = [
             perturbation_record.run_in,
@@ -3483,11 +3508,12 @@ def plot_transition_s(
     plt.show()
 
 
-def text_hamming_transitions(
+def plot_hamming_transitions(
     boolean_network: BooleanNetwork,
     hamming_setup: HammingSetup,
     bv_colors: list,
     num_transitions: int = 3,
+    text_only: bool = True,
 ):
     """requires that parameter BooleanNetwork has computed unit perturbations matrix, or has a list of cycle
     UnitPerturbationRecords"""
@@ -3525,10 +3551,10 @@ def text_hamming_transitions(
         plot_a_transition(
             boolean_network,
             hamming_setup,
-            some_indices[tr_j],
-            True,
+            # some_indices[tr_j],
+            # True,
             bv_colors,
-            text_only=True,
+            # text_only=text_only,
         )
 
 
